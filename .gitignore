@@ -4,3 +4,4 @@ ref-bomberland/
 __pycache__/
 league_results.csv
 *.egg-info/
+.hub/

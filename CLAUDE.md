@@ -16,8 +16,9 @@ rules, write a bot and train it within about an hour on CPU. Remote: git@github.
 
 ## Current focus
 
-Settle the simplified rules and the student repo layout, then check that a short CPU training run
-(PPO or DQN, a few minutes) beats the example bots.
+Keep the base repo minimal and easy: a student should write a rule-based bot and submit it within an hour.
+Left to teammates (do not start these here): RL training examples and checks, the evaluation environment
+(Python / library versions, torch, uv or Docker), and TA bots.
 
 ## This project only
 
