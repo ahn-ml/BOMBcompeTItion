@@ -76,7 +76,7 @@ against TA bots. See `league.py`.
 ```
 bombcompetition/   game.py (rules, Game, observations), env.py, render.py, match.py
 submission/        your bot (what you hand in)
-examples/random/   example bot: reading obs, returning an action
+examples/random/   example bot: obs → grid / tensor, then a random move (no strategy)
 run_match.py       play two bots
 league.py          the league
 web/               browser version (python tools/build_web.py rebuilds play.html)
