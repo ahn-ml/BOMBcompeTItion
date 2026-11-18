@@ -1,7 +1,6 @@
 """Loading bots and playing games between them."""
 
 import importlib.util
-import signal
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -11,10 +10,6 @@ import numpy as np
 
 from .game import RULES, Action, Game, Rules
 from .render import save_gif, to_rgb
-
-ACT_TIMEOUT = 0.1  # seconds per act()
-INIT_TIMEOUT = 10.0  # seconds for Policy()
-
 
 def load_policy(folder: str | Path) -> type:
     """The Policy class from <folder>/policy.py."""
@@ -39,40 +34,32 @@ def play_match(act0: Callable[[np.ndarray], int], act1: Callable[[np.ndarray], i
     return game
 
 
-def _timeout(signum, frame):
-    raise TimeoutError
-
-
 class SafeBot:
-    """Runs a submitted Policy under the league limits. A timeout, an exception or an
-    invalid action makes the bot STAY for that step and counts as a fault."""
+    """Runs a submitted Policy so that it cannot crash a game: an exception or an invalid
+    action makes the bot STAY for that step and counts as a fault.
+    No time limit is enforced yet; `slowest` records the slowest act() call."""
 
     def __init__(self, policy_cls: type):
         self.faults, self.errors, self.slowest = 0, [], 0.0
-        _, self.policy = self._call(policy_cls, INIT_TIMEOUT)
+        _, self.policy = self._call(policy_cls)
 
     def _fault(self, message: str):
         self.faults += 1
         if len(self.errors) < 5:
             self.errors.append(message)
 
-    def _call(self, fn, seconds, *args):
-        # ponytail: SIGALRM is Unix-only and cannot stop a long C call; use a process per bot if needed
-        signal.signal(signal.SIGALRM, _timeout)
-        signal.setitimer(signal.ITIMER_REAL, seconds)
+    def _call(self, fn, *args):
         try:
             return True, fn(*args)
         except Exception as e:
             self._fault(f"{getattr(fn, '__qualname__', fn)}: {e!r}")
             return False, None
-        finally:
-            signal.setitimer(signal.ITIMER_REAL, 0)
 
-    def act(self, obs: np.ndarray) -> int:
+    def act(self, obs) -> int:
         if self.policy is None:
             return Action.STAY
         start = time.perf_counter()
-        ok, action = self._call(self.policy.act, ACT_TIMEOUT, obs)
+        ok, action = self._call(self.policy.act, obs)
         self.slowest = max(self.slowest, time.perf_counter() - start)
         if ok and isinstance(action, (int, np.integer)) and 0 <= action <= 5:
             return int(action)

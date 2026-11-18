@@ -127,8 +127,8 @@ class Policy:
 
 - A new `Policy()` is created for **every game**, so you can keep information between steps of a game
   in `self` (for example, what the opponent did last step).
-- `__init__` may take up to **10 seconds** (e.g. to load a model); `act` may take up to **100 ms**.
-- If `act` is too slow, raises an exception, or returns something other than an int from 0 to 5,
+- Time limits for `__init__` and `act`: **TBD**. Keep `act` fast; `run_match.py` reports your slowest call.
+- If `act` raises an exception or returns something other than an int from 0 to 5,
   your bot does `STAY` for that step and it counts as a **fault**. The game goes on.
 - To load files from your folder (e.g. model weights), use paths relative to `policy.py`:
   `Path(__file__).parent / "weights.npz"`.
@@ -189,7 +189,7 @@ it often blows itself up. Start from it, or from the empty template in `submissi
 python run_match.py submission examples/simple --games 20
 ```
 
-plays 20 games (sides swapped every game) under the same rules and time limits as the league and prints,
+plays 20 games (sides swapped every game) under the same rules as the league and prints,
 for each bot, wins / draws / losses, kills, deaths, faults and its slowest `act` call, followed by the
 first fault messages if there were any.
 
@@ -235,12 +235,12 @@ cd submission && zip -r ../<team_name>.zip . && cd ..
   TA bots. **TBD**: how the two are combined into the grade.
 - A bot that cannot be loaded, or that faults, simply stays still in those steps. It is not disqualified,
   but it will probably lose.
-- The league is run with `league.py` in this repository, using the same engine and limits as `run_match.py`.
+- The league is run with `league.py` in this repository, using the same engine and fault handling as `run_match.py`.
 
 ## 8. Checklist before you submit
 
 - [ ] `python run_match.py submission examples/simple --games 20` runs and reports **0 faults**.
-- [ ] The slowest `act` call is well below 100 ms.
+- [ ] The slowest `act` call is well within the time limit (**TBD**).
 - [ ] Everything your bot needs is inside `submission/` and loaded relative to `policy.py`.
 - [ ] Your bot uses only the allowed libraries.
 - [ ] The zip has `policy.py` at its top level.
@@ -264,7 +264,7 @@ obs, reward, terminated, truncated, info = env.step(action)
   `info["deaths"]` (who died this step and who got the kill) and `env.game` (the full game state) are
   there for building your own reward, e.g. with a `gymnasium.Wrapper`.
 - The opponent can be any function `obs -> action`, including an earlier version of your own bot.
-- Whatever you train, your submission still has to be a `Policy` that answers within 100 ms.
+- Whatever you train, your submission still has to be a `Policy` that answers quickly (time limit **TBD**).
 
 ## Repository layout
 

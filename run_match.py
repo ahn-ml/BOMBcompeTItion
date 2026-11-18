@@ -1,4 +1,4 @@
-"""Play two bots against each other under the league rules and time limits.
+"""Play two bots against each other under the league rules.
 
     python run_match.py submission examples/simple --games 20
     python run_match.py submission examples/simple --gif replay.gif
