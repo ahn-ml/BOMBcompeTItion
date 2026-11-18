@@ -1,4 +1,3 @@
-import copy
 import json
 from pathlib import Path
 
@@ -57,7 +56,7 @@ def test_bad_rules(rules):
         Game(rules)
 
 
-def test_observation_and_from_obs():
+def test_observation():
     g = Game()
     for a0, a1 in [(Action.BOMB, Action.UP), (Action.DOWN, Action.BOMB), (Action.DOWN, Action.LEFT)]:
         g.step(a0, a1)
@@ -65,11 +64,6 @@ def test_observation_and_from_obs():
     assert (obs["player"], obs["me"], obs["opp"], obs["lives"], obs["step"]) == (B, (6, 7), (3, 1), (3, 3), 3)
     assert {(b["pos"], b["owner"], b["fuse"]) for b in obs["bombs"]} == {((1, 1), A, 3), ((6, 7), B, 4)}
     assert legal_actions(obs) == [Action.STAY, Action.BOMB, Action.UP, Action.DOWN]
-    for p in (A, B):
-        rebuilt, real = Game.from_obs(g.obs(p)), copy.deepcopy(g)
-        for _ in range(6):
-            assert rebuilt.step(S, Action.LEFT) == real.step(S, Action.LEFT)
-            assert rebuilt.obs(p)["bombs"] == real.obs(p)["bombs"] and rebuilt.pos == real.pos
 
 
 def test_env():

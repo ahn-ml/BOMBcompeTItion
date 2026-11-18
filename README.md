@@ -35,8 +35,8 @@ class Policy:
 Write it in `submission/policy.py` and test it against the examples:
 
 ```bash
-python run_match.py submission examples/simple --games 20
-python run_match.py submission examples/simple --gif replay.gif
+python run_match.py submission examples/random --games 20
+python run_match.py submission examples/random --gif replay.gif
 ```
 
 `run_match.py` uses the league's limits: a slow step, an exception or an invalid action is reported
@@ -59,14 +59,12 @@ as a fault (and counts as STAY). Once it plays without faults, zip the `submissi
 }
 ```
 
-Turning it into features, tensors or anything else is up to you. Some helpers:
+Turning it into features, tensors or anything else is up to you. `legal_actions(obs)` lists the
+actions that are not blocked.
 
-- `legal_actions(obs)` → the actions that are not blocked
-- `blast_cells(walls, cell, radius)` → cells a bomb at `cell` hits
-- `Game.from_obs(obs)` → a `Game` you can `step(a0, a1)` to simulate ahead
-- `BomberEnv(opponent, player)` → gymnasium env (dict observations). The default reward is +1 per kill
-  and -1 per life lost; `info["deaths"]` and `env.game` let you build your own. The opponent can be
-  any `obs -> action`, including your own bot.
+For reinforcement learning there is a gymnasium env, `BomberEnv(opponent, player)`, with the same dict
+observations. Its default reward is +1 per kill and -1 per life lost; `info["deaths"]` and `env.game`
+let you build your own. The opponent can be any `obs -> action`, including your own bot.
 
 ## Evaluation
 
@@ -78,7 +76,7 @@ against TA bots. See `league.py`.
 ```
 bombcompetition/   game.py (rules, Game, observations), env.py, render.py, match.py
 submission/        your bot (what you hand in)
-examples/          random, simple
+examples/random/   example bot: reading obs, returning an action
 run_match.py       play two bots
 league.py          the league
 web/               browser version (python tools/build_web.py rebuilds play.html)

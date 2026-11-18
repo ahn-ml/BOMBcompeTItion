@@ -179,7 +179,7 @@ class Game {
   winner() { return this.lives[0] === this.lives[1] ? null : (this.lives[0] > this.lives[1] ? 0 : 1); }
 }
 
-// ---------- bots: mirror examples/{random,simple}/policy.py and ta_bots/greedy/policy.py ----------
+// ---------- opponents for the browser game (random = examples/random, greedy = ta_bots/greedy) ----------
 const pick = xs => xs[Math.floor(Math.random() * xs.length)];
 function dangerOf(g) { const s = new Set(); for (const k of g.bombs.keys()) for (const x of g.blastCells(Math.floor(k / g.N), k % g.N)) s.add(x); return s; }
 function bfs(g, start, blocked) {

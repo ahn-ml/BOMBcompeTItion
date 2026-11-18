@@ -179,17 +179,6 @@ class Game:
             "step": self.t,
         }
 
-    @classmethod
-    def from_obs(cls, obs: dict, rules: Rules = RULES) -> "Game":
-        """Rebuild the game from an observation, to simulate ahead with `step`. Kill counts start at 0."""
-        game = cls(rules)
-        me, opp = obs["player"], 1 - obs["player"]
-        game.pos[me], game.pos[opp] = obs["me"], obs["opp"]
-        game.lives[me], game.lives[opp] = obs["lives"]
-        game.t = obs["step"]
-        game.bombs = {b["pos"]: Bomb(b["owner"], b["fuse"]) for b in obs["bombs"]}
-        return game
-
 
 def legal_actions(obs: dict) -> list[Action]:
     """STAY, BOMB and the moves that are not blocked by a wall, a bomb or the opponent."""
