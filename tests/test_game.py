@@ -66,6 +66,18 @@ def test_observation():
     assert legal_actions(obs) == [Action.STAY, Action.BOMB, Action.UP, Action.DOWN]
 
 
+def test_custom_reward():
+    seen = []
+
+    def reward_fn(prev_obs, action, obs, deaths):
+        seen.append((prev_obs["step"], action, obs["step"]))
+        return -0.5
+
+    env = BomberEnv(opponent=lambda obs: S, reward_fn=reward_fn)
+    env.reset()
+    assert env.step(Action.UP)[1] == -0.5 and seen == [(0, Action.UP, 1)]
+
+
 def test_env():
     for player in (A, B):
         check_env(BomberEnv(opponent=lambda obs: Action.BOMB, player=player), skip_render_check=True)

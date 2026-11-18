@@ -87,16 +87,31 @@ file to step through it; each step shows the actions both players chose.
 
 ## Environment
 
-For training or simulation you can use the game directly from Python. Nothing is rendered unless you ask for it.
+For training or simulation you can run the game from Python. Nothing is rendered, so it is fast
+(about 100,000 steps per second on one CPU core). There are two ways to drive it.
 
-`BomberEnv` is a [Gymnasium](https://gymnasium.farama.org/) env: you play one side and `opponent`
-(any `obs -> action` function, e.g. another bot or an older copy of yours) plays the other.
+**`Game`: you give both players' actions.** Useful for self-play or for simulating ahead.
+
+```python
+from bombcompetition import Action, Game
+
+game = Game()
+while not game.done:
+    obs_a, obs_b = game.obs(0), game.obs(1)        # what A and B see
+    deaths = game.step(Action.UP, Action.BOMB)     # A's action, B's action
+```
+
+`game.step` returns who was hit in that step, as a list of `Death(player, killer)`
+(`killer` is `None` when a player hit itself). `game.lives`, `game.kills` and `game.done` give the score.
+
+**`BomberEnv`: you give one action, a fixed opponent plays the other.** A standard
+[Gymnasium](https://gymnasium.farama.org/) env, ready for RL libraries.
 
 ```python
 from bombcompetition import BomberEnv, load_policy
 
 opponent = load_policy("examples/simple")()
-env = BomberEnv(opponent=opponent.act, player=0)   # player=1 to play as B
+env = BomberEnv(opponent=opponent.act, player=0)   # you are A; player=1 to play as B
 obs, info = env.reset()
 obs, reward, terminated, truncated, info = env.step(action)
 ```
@@ -105,32 +120,33 @@ obs, reward, terminated, truncated, info = env.step(action)
 |---|---|
 | observation | the `obs` dict above (`env.observation_space` is a `spaces.Dict`) |
 | action | `Discrete(6)` |
-| reward | +1 when your bomb hits the opponent, -1 when you lose a life |
+| reward | by default +1 when your bomb hits the opponent, -1 when you lose a life |
 | terminated / truncated | someone has no lives left / the step limit is reached |
 | info | `deaths` (who was hit this step and by whom), `lives`, `kills` |
-| `env.game` | the full game state, e.g. for your own reward |
 
-`Game` runs a game where you choose both players' actions, e.g. for self-play:
+The opponent can be any `obs -> action` function: the example bot, an older copy of your bot, or
+your current bot (self-play).
+
+**Your own reward.** Pass `reward_fn(prev_obs, action, obs, deaths) -> float`. It is called after
+every step with the observation before and after the step, your action, and who was hit:
 
 ```python
-from bombcompetition import Game
+def my_reward(prev_obs, action, obs, deaths):
+    me = obs["player"]
+    reward = sum((d.killer == me) - (d.player == me) for d in deaths)   # the default reward
+    return reward - 0.01                                                 # plus a small cost per step
 
-game = Game()
-while not game.done:
-    deaths = game.step(action_a, action_b)   # returns who was hit this step
-    obs_a, obs_b = game.obs(0), game.obs(1)
+env = BomberEnv(opponent=opponent.act, reward_fn=my_reward)
 ```
 
-Both take the rules as an argument, so you can also train on other settings:
+**Other rules.** `Game`, `BomberEnv` and `play_match` take a `Rules`; values you leave out keep the
+defaults in `RULES`. `run_match.py` and the league always use the default `RULES`.
 
 ```python
 from bombcompetition import Rules
 
-rules = Rules(max_bombs=3, fuse=8, lives=5)   # unspecified values keep the defaults in RULES
-env = BomberEnv(opponent=opponent.act, rules=rules)
+env = BomberEnv(opponent=opponent.act, rules=Rules(max_bombs=3, fuse=8, lives=5))
 ```
-
-`run_match.py` and the league always use the default `RULES`.
 
 ## Submission
 
