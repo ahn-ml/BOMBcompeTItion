@@ -45,24 +45,27 @@ as a fault (and counts as STAY). Once it plays without faults, zip the `submissi
 
 ## Observation
 
-`float32 (9, 9, 9)`, the same board for both players, row 0 at the top:
+`obs` is the game state as it is, a dict (the same board for both players, row 0 at the top):
 
-| Channel | |
-|---|---|
-| 0 | walls |
-| 1, 2 | me, opponent |
-| 3, 4 | my bombs, opponent bombs (steps until explosion / 6) |
-| 5, 6 | my lives, opponent lives (/ 3) |
-| 7 | steps left (/ 300) |
-| 8 | 0 if I am A (start top-left), 1 if I am B (start bottom-right) |
+```python
+{
+    "player": 0,                       # 0 = A (starts top-left), 1 = B (starts bottom-right)
+    "walls": walls,                    # bool array (9, 9); walls[row, col]
+    "me": (2, 1), "opp": (6, 7),       # (row, col)
+    "bombs": ({"pos": (1, 1), "owner": 0, "fuse": 4},   # fuse = steps until it explodes
+              {"pos": (6, 7), "owner": 1, "fuse": 5}),
+    "lives": (3, 3),                   # (mine, opponent's)
+    "step": 2,                         # steps played so far
+}
+```
 
-What you do with it is up to you. Some helpers:
+Turning it into features, tensors or anything else is up to you. Some helpers:
 
-- `parse(obs)` → `View` with `me`, `opp`, `my_bombs`, `opp_bombs`, lives, `legal_actions()`
+- `legal_actions(obs)` → the actions that are not blocked
 - `blast_cells(walls, cell, radius)` → cells a bomb at `cell` hits
-- `to_game(obs)` → a `Game` you can `step(a0, a1)` to simulate ahead
-- `BomberEnv(opponent, player)` → gymnasium env for RL. The default reward is +1 per kill and
-  -1 per life lost; `info["deaths"]` and `env.game` let you build your own. The opponent can be
+- `Game.from_obs(obs)` → a `Game` you can `step(a0, a1)` to simulate ahead
+- `BomberEnv(opponent, player)` → gymnasium env (dict observations). The default reward is +1 per kill
+  and -1 per life lost; `info["deaths"]` and `env.game` let you build your own. The opponent can be
   any `obs -> action`, including your own bot.
 
 ## Evaluation
@@ -73,7 +76,7 @@ against TA bots. See `league.py`.
 ## Layout
 
 ```
-bombcompetition/   game.py (rules, Game), view.py (parse, to_game), env.py, render.py, match.py
+bombcompetition/   game.py (rules, Game, observations), env.py, render.py, match.py
 submission/        your bot (what you hand in)
 examples/          random, simple
 run_match.py       play two bots

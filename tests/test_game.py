@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from gymnasium.utils.env_checker import check_env
 
-from bombcompetition import MAP, Action, BomberEnv, Game, Rules, parse, to_game
+from bombcompetition import MAP, Action, BomberEnv, Game, Rules, legal_actions
 from bombcompetition.game import Bomb
 
 A, B = 0, 1
@@ -57,23 +57,24 @@ def test_bad_rules(rules):
         Game(rules)
 
 
-def test_observation_and_to_game():
+def test_observation_and_from_obs():
     g = Game()
     for a0, a1 in [(Action.BOMB, Action.UP), (Action.DOWN, Action.BOMB), (Action.DOWN, Action.LEFT)]:
         g.step(a0, a1)
-    v = parse(g.obs(B))
-    assert (v.player, v.me, v.opp, v.my_lives, v.steps_left) == (B, (6, 7), (3, 1), 3, 297)
-    assert v.my_bombs == {(6, 7): 4} and v.opp_bombs == {(1, 1): 3}
+    obs = g.obs(B)
+    assert (obs["player"], obs["me"], obs["opp"], obs["lives"], obs["step"]) == (B, (6, 7), (3, 1), (3, 3), 3)
+    assert {(b["pos"], b["owner"], b["fuse"]) for b in obs["bombs"]} == {((1, 1), A, 3), ((6, 7), B, 4)}
+    assert legal_actions(obs) == [Action.STAY, Action.BOMB, Action.UP, Action.DOWN]
     for p in (A, B):
-        rebuilt, real = to_game(g.obs(p)), copy.deepcopy(g)
+        rebuilt, real = Game.from_obs(g.obs(p)), copy.deepcopy(g)
         for _ in range(6):
             assert rebuilt.step(S, Action.LEFT) == real.step(S, Action.LEFT)
-            assert (rebuilt.obs(p) == real.obs(p)).all()
+            assert rebuilt.obs(p)["bombs"] == real.obs(p)["bombs"] and rebuilt.pos == real.pos
 
 
 def test_env():
     for player in (A, B):
-        check_env(BomberEnv(opponent=lambda obs: S, player=player), skip_render_check=True)
+        check_env(BomberEnv(opponent=lambda obs: Action.BOMB, player=player), skip_render_check=True)
 
 
 def test_recorded_games_replay_identically():

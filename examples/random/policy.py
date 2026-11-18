@@ -1,6 +1,6 @@
 import numpy as np
 
-from bombcompetition import parse
+from bombcompetition import legal_actions
 
 
 class Policy:
@@ -10,4 +10,4 @@ class Policy:
         self.rng = np.random.default_rng()
 
     def act(self, obs):
-        return int(self.rng.choice(parse(obs).legal_actions()))
+        return int(self.rng.choice(legal_actions(obs)))

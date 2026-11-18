@@ -8,7 +8,7 @@ from collections import deque
 
 import numpy as np
 
-from bombcompetition import DELTAS, MOVES, RULES, Action, blast_cells, parse
+from bombcompetition import DELTAS, MOVES, RULES, Action, blast_cells
 
 
 def shortest_paths(walls, start, blocked):
@@ -32,27 +32,28 @@ class Policy:
         self.rng = np.random.default_rng()
 
     def act(self, obs):
-        view = parse(obs)
-        bombs = set(view.bombs)
-        danger = set().union(*(blast_cells(view.walls, b, RULES.radius) for b in bombs))
-        paths = shortest_paths(view.walls, view.me, bombs | {view.opp})
+        walls, me, opp = obs["walls"], obs["me"], obs["opp"]
+        bombs = {b["pos"] for b in obs["bombs"]}
+        mine = sum(b["owner"] == obs["player"] for b in obs["bombs"])
+        danger = set().union(*(blast_cells(walls, b, RULES.radius) for b in bombs))
+        paths = shortest_paths(walls, me, bombs | {opp})
 
-        if view.me in danger:
+        if me in danger:
             safe = [(d, a) for cell, (d, a) in paths.items() if cell not in danger]
             return int(min(safe)[1]) if safe else Action.STAY
 
-        my_blast = blast_cells(view.walls, view.me, RULES.radius)
-        if len(view.my_bombs) < RULES.max_bombs and view.opp in my_blast:
+        my_blast = blast_cells(walls, me, RULES.radius)
+        if mine < RULES.max_bombs and opp in my_blast:
             after = danger | my_blast
             if any(cell not in after and d < RULES.fuse for cell, (d, _) in paths.items()):
                 return Action.BOMB
 
-        to_opp = shortest_paths(view.walls, view.opp, bombs)
-        best, best_dist = Action.STAY, to_opp.get(view.me, (99,))[0]
+        to_opp = shortest_paths(walls, opp, bombs)
+        best, best_dist = Action.STAY, to_opp.get(me, (99,))[0]
         moves = list(MOVES)
         self.rng.shuffle(moves)
         for a in moves:
-            t = (view.me[0] + DELTAS[a][0], view.me[1] + DELTAS[a][1])
+            t = (me[0] + DELTAS[a][0], me[1] + DELTAS[a][1])
             if t in to_opp and t not in danger and t not in bombs and to_opp[t][0] < best_dist:
                 best, best_dist = a, to_opp[t][0]
         return int(best)

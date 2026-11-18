@@ -1,6 +1,6 @@
 import numpy as np
 
-from bombcompetition import DELTAS, RULES, Action, blast_cells, parse
+from bombcompetition import DELTAS, RULES, Action, blast_cells, legal_actions
 
 
 class Policy:
@@ -10,10 +10,10 @@ class Policy:
         self.rng = np.random.default_rng()
 
     def act(self, obs):
-        view = parse(obs)
-        if not view.bombs and self.rng.random() < 0.1:
+        if not obs["bombs"] and self.rng.random() < 0.1:
             return Action.BOMB
-        danger = set().union(*(blast_cells(view.walls, b, RULES.radius) for b in view.bombs))
-        moves = [a for a in view.legal_actions() if a != Action.BOMB]
-        safe = [a for a in moves if (view.me[0] + DELTAS[a][0], view.me[1] + DELTAS[a][1]) not in danger]
+        danger = set().union(*(blast_cells(obs["walls"], b["pos"], RULES.radius) for b in obs["bombs"]))
+        r, c = obs["me"]
+        moves = [a for a in legal_actions(obs) if a != Action.BOMB]
+        safe = [a for a in moves if (r + DELTAS[a][0], c + DELTAS[a][1]) not in danger]
         return int(self.rng.choice(safe or moves))

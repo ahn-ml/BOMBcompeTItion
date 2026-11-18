@@ -167,17 +167,36 @@ class Game:
             return None
         return int(self.lives[1] > self.lives[0])
 
-    def obs(self, p: int) -> np.ndarray:
-        """What player p sees. Channel layout: see bombcompetition/view.py."""
-        r = self.rules
-        o = np.zeros((9, self.size, self.size), dtype=np.float32)
-        o[0] = self.walls
-        o[1][self.pos[p]] = 1
-        o[2][self.pos[1 - p]] = 1
-        for cell, bomb in self.bombs.items():
-            o[3 if bomb.owner == p else 4][cell] = bomb.fuse / r.fuse
-        o[5] = self.lives[p] / r.lives
-        o[6] = self.lives[1 - p] / r.lives
-        o[7] = (r.max_steps - self.t) / r.max_steps
-        o[8] = p
-        return o
+    def obs(self, p: int) -> dict:
+        """What player p sees: the game state as it is."""
+        return {
+            "player": p,  # 0 = A, 1 = B
+            "walls": self.walls.copy(),  # bool (size, size), walls[row, col]
+            "me": self.pos[p],
+            "opp": self.pos[1 - p],
+            "bombs": tuple({"pos": cell, "owner": b.owner, "fuse": b.fuse} for cell, b in self.bombs.items()),
+            "lives": (self.lives[p], self.lives[1 - p]),  # (mine, opponent's)
+            "step": self.t,
+        }
+
+    @classmethod
+    def from_obs(cls, obs: dict, rules: Rules = RULES) -> "Game":
+        """Rebuild the game from an observation, to simulate ahead with `step`. Kill counts start at 0."""
+        game = cls(rules)
+        me, opp = obs["player"], 1 - obs["player"]
+        game.pos[me], game.pos[opp] = obs["me"], obs["opp"]
+        game.lives[me], game.lives[opp] = obs["lives"]
+        game.t = obs["step"]
+        game.bombs = {b["pos"]: Bomb(b["owner"], b["fuse"]) for b in obs["bombs"]}
+        return game
+
+
+def legal_actions(obs: dict) -> list[Action]:
+    """STAY, BOMB and the moves that are not blocked by a wall, a bomb or the opponent."""
+    bombs = {b["pos"] for b in obs["bombs"]}
+    moves = []
+    for a in MOVES:
+        t = (obs["me"][0] + DELTAS[a][0], obs["me"][1] + DELTAS[a][1])
+        if not (obs["walls"][t] or t in bombs or t == obs["opp"]):
+            moves.append(a)
+    return [Action.STAY, Action.BOMB, *moves]

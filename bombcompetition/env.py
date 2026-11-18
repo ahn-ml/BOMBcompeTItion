@@ -1,7 +1,6 @@
 """Gymnasium env: you play one side, `opponent` (obs -> action) plays the other."""
 
 import gymnasium as gym
-import numpy as np
 
 from .game import RULES, Game, Rules
 from .render import to_rgb, to_text
@@ -15,9 +14,19 @@ class BomberEnv(gym.Env):
 
     def __init__(self, opponent, player: int = 0, rules: Rules = RULES, render_mode: str | None = None):
         self.opponent, self.player, self.rules, self.render_mode = opponent, player, rules, render_mode
-        size = Game(rules).size
-        self.observation_space = gym.spaces.Box(0.0, 1.0, (9, size, size), np.float32)
-        self.action_space = gym.spaces.Discrete(6)
+        n, sp = Game(rules).size, gym.spaces
+        cell = sp.Tuple((sp.Discrete(n), sp.Discrete(n)))
+        bomb = sp.Dict({"pos": cell, "owner": sp.Discrete(2), "fuse": sp.Discrete(rules.fuse + 1)})
+        self.observation_space = sp.Dict({
+            "player": sp.Discrete(2),
+            "walls": sp.MultiBinary((n, n)),
+            "me": cell,
+            "opp": cell,
+            "bombs": sp.Sequence(bomb),
+            "lives": sp.Tuple((sp.Discrete(rules.lives + 1),) * 2),
+            "step": sp.Discrete(rules.max_steps + 1),
+        })
+        self.action_space = sp.Discrete(6)
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
