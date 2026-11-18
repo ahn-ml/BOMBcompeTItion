@@ -3,3 +3,4 @@ ref-bomberland/
 .venv/
 __pycache__/
 league_results.csv
+*.egg-info/

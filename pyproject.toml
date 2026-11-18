@@ -1,0 +1,15 @@
+[project]
+name = "bombcompetition"
+version = "0.1.0"
+description = "A 1v1 bomb game (Nubzuki vs the KAIST goose) for an RL lab"
+requires-python = ">=3.10"
+dependencies = ["numpy", "gymnasium", "pillow"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools]
+packages = ["bombcompetition"]
+
+[tool.setuptools.package-data]
+bombcompetition = ["assets/*"]

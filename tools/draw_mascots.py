@@ -1,14 +1,24 @@
-"""Draw 16x16 Bomberland-style mascot sprites (fan pixel art): A = Nubzuki, B = KAIST campus goose."""
-import sys
+"""Draw the two characters as 16x16 pixel art in the style of the board sprites.
+
+    python tools/draw_mascots.py   # writes bombcompetition/assets/player_a.png and player_b.png
+
+A = Nubzuki (KAIST mascot), B = KAIST campus goose. Edit the pixel grids below and rerun.
+"""
+
+from pathlib import Path
+
 from PIL import Image
 
-PAL = {
-    "O": (0x2e, 0x22, 0x2f), "W": (0xff, 0xff, 0xff),
-    "B": (0x4d, 0x9b, 0xe6), "L": (0x8f, 0xd3, 0xff), "D": (0x4d, 0x65, 0xb4),  # Bomberland blues
-    "R": (0xe8, 0x3b, 0x3b), "M": (0xc3, 0x24, 0x54), "N": (0x93, 0x1a, 0x4b),  # red / magenta / dark magenta
-    "F": (0xfb, 0x6b, 0x1d), "Y": (0xf9, 0xc2, 0x2b),                          # orange / yellow
-    "G": (0x9b, 0xab, 0xb2), "K": (0x48, 0x4a, 0x77), "P": (0xf0, 0x4f, 0x78),
-    "S": (0xc7, 0xdc, 0xd0),  # light grey shading
+OUT = Path(__file__).resolve().parents[1] / "bombcompetition" / "assets"
+
+PALETTE = {
+    "O": (0x2E, 0x22, 0x2F),  # outline
+    "W": (0xFF, 0xFF, 0xFF),  # white
+    "S": (0xC7, 0xDC, 0xD0),  # light grey shading
+    "B": (0x4D, 0x9B, 0xE6),  # blue
+    "L": (0x8F, 0xD3, 0xFF),  # light blue
+    "D": (0x4D, 0x65, 0xB4),  # dark blue
+    "F": (0xFB, 0x6B, 0x1D),  # orange
 }
 
 NUBZUKI = [
@@ -50,16 +60,17 @@ GOOSE = [
 ]
 
 
-def make(rows, path):
-    assert len(rows) == 16 and all(len(r) == 16 for r in rows), [len(r) for r in rows]
+def draw(rows, path):
+    assert len(rows) == 16 and all(len(r) == 16 for r in rows)
     img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
     for y, row in enumerate(rows):
         for x, ch in enumerate(row):
             if ch != ".":
-                img.putpixel((x, y), PAL[ch] + (255,))
+                img.putpixel((x, y), PALETTE[ch] + (255,))
     img.save(path)
 
 
-out = sys.argv[1] if len(sys.argv) > 1 else __import__("os").path.dirname(__file__)
-make(NUBZUKI, f"{out}/player_a.png")
-make(GOOSE, f"{out}/player_b.png")
+if __name__ == "__main__":
+    draw(NUBZUKI, OUT / "player_a.png")
+    draw(GOOSE, OUT / "player_b.png")
+    print(f"wrote {OUT}/player_a.png, player_b.png")

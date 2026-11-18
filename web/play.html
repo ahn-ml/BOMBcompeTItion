@@ -1,8 +1,8 @@
-<title>Mini Bomber Preview</title>
+<title>BOMBcompeTItion</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;600&family=JetBrains+Mono:wght@500&display=swap">
 <style>
-/* Layout: playfield left (canvas with the Bomberland sprites), controls and rules right; stacks on phones. Deliberate single dark arcade look matching the sprites' space floor. */
+/* Layout: playfield left (canvas with the board sprites), controls and rules right; stacks on phones. Deliberate single dark arcade look matching the sprites' space floor. */
 :root {
   --bg: #0f1218; --panel: #171c25; --line: #2a3340; --fg: #e8ebf0; --muted: #8e99a8;
   --a: #4d9be6; --b: #e8487a; --gold: #f9c22b;
@@ -53,8 +53,8 @@ ul.rules { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.65; }
 </style>
 
 <div class="wrap">
-  <h1>Mini Bomber</h1>
-  <p class="sub">넙죽이 대 거위, 1 vs 1 폭탄 대결. 게임은 tick 마다 흘러가고, 두 플레이어의 행동을 한꺼번에 처리합니다. 실습 환경 <code>bomber_env.py</code> 와 같은 규칙입니다.</p>
+  <h1>BOMBcompeTItion</h1>
+  <p class="sub">넙죽이 대 거위, 1 vs 1 폭탄 대결. 게임은 tick 마다 흘러가고, 두 플레이어의 행동을 한꺼번에 처리합니다. 실습 환경 <code>bombcompetition</code> 패키지와 같은 규칙입니다.</p>
   <div class="main">
     <div class="field">
       <div class="hud">
@@ -130,7 +130,7 @@ const D = [[0,0],[-1,0],[1,0],[0,-1],[0,1],[0,0]];
 const NAMES = ["넙죽이", "거위"];
 let R = {};
 
-// ---------- game rules: mirrors bomber_env.Game ----------
+// ---------- game rules: mirrors bombcompetition/game.py ----------
 class Game {
   constructor() {
     const rows = MAPS[R.layout];
