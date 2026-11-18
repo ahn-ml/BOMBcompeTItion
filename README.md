@@ -155,7 +155,7 @@ env = BomberEnv(opponent=opponent.act, rules=Rules(max_bombs=3, fuse=8, lives=5)
 | `submission/` | Yours. Change anything and add files (helper modules, model weights). This folder is what you hand in. |
 | Anything new you create | Yours, e.g. training scripts, notebooks, other bot folders to test against. Not handed in. |
 | `examples/` | Read it and copy from it. |
-| `bombcompetition/` | Do not change. Your bot may import it, but the league runs its own unchanged copy, so a bot that depends on your changes will break there. |
+| `bombcompetition/` | Do not change. Your bot may import it, but the league runs its own unchanged copy, so a bot that depends on your changes will break there. You do not need to change it for training: the reward, the rules and the opponent are arguments of `BomberEnv` (see [Environment](#environment)), set in your own code. |
 | `run_match.py`, `league.py`, `web/`, `tests/`, `tools/` | Do not change. They are the tools we provide. |
 
 ## Submission
