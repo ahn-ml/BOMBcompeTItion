@@ -1,96 +1,77 @@
 # BOMBcompeTItion
 
-A two-player bomb game for the class bot competition. Each team writes one bot; bots play each other
-in a league and are ranked by kills.
+A two-player bomb game for the class bot competition.
 
 <p align="center"><img src="images/match.gif" width="400"></p>
 
-## Setup
+## Game Overview
+
+Two players start in opposite corners of a fixed 9x9 map with walls. Every step both choose an action
+at the same time: move, stay, or drop a bomb. A bomb explodes a few steps later in a cross and stops at
+walls. A player caught in an explosion loses a life, and both players restart from their corners. You
+score a **kill** when your bomb hits the opponent. A game ends when someone has no lives left or after
+300 steps.
+
+Each team writes one bot. Bots play each other in a league and are ranked by kills.
+
+Full rules: [docs/rules.md](docs/rules.md).
+
+## Table of Contents
+
+- [Getting Started](#getting-started)
+- [Observation and Action](#observation-and-action)
+- [Usage](#usage)
+- [Competition](#competition)
+- [Open questions (TAs)](#open-questions-tas-remove-before-release)
+
+---
+
+## Getting Started
 
 ```bash
-pip install -e .    # Python >= 3.10
+git clone https://github.com/ahn-ml/BOMBcompeTItion.git
+cd BOMBcompeTItion
+pip install -e .    # Python >= 3.10; numpy, gymnasium, pillow
 ```
 
-## Rules
+Check that it works by playing the example bot against itself:
 
-<p align="center"><img src="images/board.png" width="400"></p>
-
-The board is a fixed 9x9 map. Cells are `(row, col)` with row 0 at the top. Player A starts at `(1, 1)`,
-player B at `(7, 7)`. Grey blocks are walls.
-
-Each step both players choose one action at the same time:
-
-| 0 | 1 | 2 | 3 | 4 | 5 |
-|---|---|---|---|---|---|
-| STAY | UP | DOWN | LEFT | RIGHT | BOMB |
-
-A step is resolved in this order:
-
-1. Bombs are dropped on the players' cells (at most 2 bombs per player on the board).
-2. Players move. Walls, bombs and the other player's cell block a move. If both move into the same cell, neither moves.
-3. Every bomb's fuse goes down by 1. A bomb at 0 explodes: its cell and up to 2 cells in each direction,
-   stopped by walls. An explosion that reaches another bomb sets it off too.
-4. A player in an explosion loses a life. Then both players go back to their start cells and all bombs are removed.
-
-A bomb explodes 5 steps after the step it was dropped in. Each player has 3 lives. If the opponent's
-bomb was part of the explosion that hit you, the opponent gets a kill; your own bomb gives no kill.
-The game ends when someone has no lives left or after 300 steps.
-
-The values are in `bombcompetition.RULES`.
-
-## Your bot
-
-A bot is a folder with a `policy.py`. Write yours in `submission/policy.py`:
-
-```python
-class Policy:
-    def __init__(self):   # once per game
-        ...
-
-    def act(self, obs):   # every step, returns 0-5
-        ...
+```bash
+python run_match.py --p1 examples/simple --p2 examples/simple
 ```
 
-If `act` raises an exception or returns something else, the bot stays for that step (a fault).
-Time limits: TBD.
+---
 
-`obs` is a dict, the same board for both players:
+## Observation and Action
 
-| key | value |
+Every step a bot gets `obs`, a dict with the full game state. Both players see the same board.
+
+| Key | Value |
 |---|---|
-| `player` | 0 if you are A, 1 if you are B |
-| `walls` | numpy bool array `(9, 9)`, `walls[row, col]` |
+| `player` | 0 if you are A (starts top-left), 1 if you are B (starts bottom-right) |
+| `walls` | numpy bool array `(9, 9)`, `walls[row, col]`; row 0 is the top |
 | `me`, `opp` | `(row, col)` of you and the opponent |
 | `bombs` | tuple of `{"pos": (row, col), "owner": 0 or 1, "fuse": steps until it explodes}` |
 | `lives` | `(yours, opponent's)` |
 | `step` | steps played so far (the game ends at 300) |
 
-What you do with it is up to you. `legal_actions(obs)` returns the actions that are not blocked.
-`examples/simple/policy.py` is a small example bot.
+The bot returns one action:
 
-## Running games
+| 0 | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| STAY | UP | DOWN | LEFT | RIGHT | BOMB |
 
-```bash
-python run_match.py --p1 submission --p2 examples/simple --games 20
-```
+How you turn `obs` into features or a tensor is up to you. `legal_actions(obs)` lists the actions that
+are not blocked.
 
-`--p1` plays A and `--p2` plays B; any bot folder works for either. It prints wins, draws, losses,
-kills, deaths and faults for each bot:
+---
 
-```
-p1 submission: 0W 12D 8L  kills 0  deaths 36  faults 0  slowest act 0 ms
-p2 examples/simple: 8W 12D 0L  kills 36  deaths 27  faults 0  slowest act 0 ms
-```
+## Usage
 
-Add `--replay replay.json` to also save one game. Open `web/replay.html` in a browser and load the
-file to step through it; each step shows the actions both players chose.
+The game runs in plain Python without rendering, at about 100,000 steps per second on one CPU core.
+There are two interfaces.
 
-## Environment
-
-For training or simulation you can run the game from Python. Nothing is rendered, so it is fast
-(about 100,000 steps per second on one CPU core). There are two ways to drive it.
-
-**`Game`: you give both players' actions.** Useful for self-play or for simulating ahead.
+### `Game`: both players' actions
 
 ```python
 from bombcompetition import Action, Game
@@ -101,72 +82,107 @@ while not game.done:
     deaths = game.step(Action.UP, Action.BOMB)     # A's action, B's action
 ```
 
-`game.step` returns who was hit in that step, as a list of `Death(player, killer)`
-(`killer` is `None` when a player hit itself). `game.lives`, `game.kills` and `game.done` give the score.
+`game.step` returns who was hit in that step as a list of `Death(player, killer)` (`killer` is `None`
+when a player hit itself). Use it for self-play or to simulate ahead.
 
-**`BomberEnv`: you give one action, a fixed opponent plays the other.** A standard
-[Gymnasium](https://gymnasium.farama.org/) env, ready for RL libraries.
+### `BomberEnv`: one action, a fixed opponent
+
+A [Gymnasium](https://gymnasium.farama.org/) env for reinforcement learning. You play one side and
+`opponent`, any `obs -> action` function, plays the other.
 
 ```python
 from bombcompetition import BomberEnv, load_policy
 
 opponent = load_policy("examples/simple")()
-env = BomberEnv(opponent=opponent.act, player=0)   # you are A; player=1 to play as B
+env = BomberEnv(opponent=opponent.act, player=0)   # player=1 to play as B
 obs, info = env.reset()
 obs, reward, terminated, truncated, info = env.step(action)
 ```
 
 | | |
 |---|---|
-| observation | the `obs` dict above (`env.observation_space` is a `spaces.Dict`) |
+| observation | the `obs` dict (`env.observation_space` is a `spaces.Dict`) |
 | action | `Discrete(6)` |
 | reward | by default +1 when your bomb hits the opponent, -1 when you lose a life |
 | terminated / truncated | someone has no lives left / the step limit is reached |
-| info | `deaths` (who was hit this step and by whom), `lives`, `kills` |
+| info | `deaths`, `lives`, `kills` |
 
-The opponent can be any `obs -> action` function: the example bot, an older copy of your bot, or
-your current bot (self-play).
+### Custom reward and rules
 
-**Your own reward.** Pass `reward_fn(prev_obs, action, obs, deaths) -> float`. It is called after
-every step with the observation before and after the step, your action, and who was hit:
+Both are set from your own code; you do not change the package.
 
 ```python
-def my_reward(prev_obs, action, obs, deaths):
+from bombcompetition import BomberEnv, Rules
+
+def my_reward(prev_obs, action, obs, deaths):     # called after every step
     me = obs["player"]
     reward = sum((d.killer == me) - (d.player == me) for d in deaths)   # the default reward
     return reward - 0.01                                                 # plus a small cost per step
 
-env = BomberEnv(opponent=opponent.act, reward_fn=my_reward)
+env = BomberEnv(opponent=opponent.act, reward_fn=my_reward, rules=Rules(max_bombs=3, lives=5))
 ```
 
-**Other rules.** `Game`, `BomberEnv` and `play_match` take a `Rules`; values you leave out keep the
-defaults in `RULES`. `run_match.py` and the league always use the default `RULES`.
+`Rules` values you leave out keep the defaults in `RULES`. `run_match.py` and the league always use
+the default `RULES`.
+
+---
+
+## Competition
+
+### Step 1: Write your bot (`submission/policy.py`)
 
 ```python
-from bombcompetition import Rules
+class Policy:
+    def __init__(self):   # once per game; load model weights here
+        ...
 
-env = BomberEnv(opponent=opponent.act, rules=Rules(max_bombs=3, fuse=8, lives=5))
+    def act(self, obs):   # every step; return an int from 0 to 5
+        ...
 ```
 
-## What you can change
+A new `Policy` is created for every game. Load files relative to the folder:
+`Path(__file__).parent / "weights.npz"`. `examples/simple/policy.py` is a small example.
 
-| Path | |
-|---|---|
-| `submission/` | Yours. Change anything and add files (helper modules, model weights). This folder is what you hand in. |
-| Anything new you create | Yours, e.g. training scripts, notebooks, other bot folders to test against. Not handed in. |
-| `examples/` | Read it and copy from it. |
-| `bombcompetition/` | Do not change. Your bot may import it, but the league runs its own unchanged copy, so a bot that depends on your changes will break there. You do not need to change it for training: the reward, the rules and the opponent are arguments of `BomberEnv` (see [Environment](#environment)), set in your own code. |
-| `run_match.py`, `league.py`, `web/`, `tests/`, `tools/` | Do not change. They are the tools we provide. |
+> **Note:** if `act` raises an exception or returns something other than 0-5, the bot stays for that
+> step and it counts as a fault. Time limits: TBD.
 
-## Submission
+### Step 2: Test it
+
+```bash
+python run_match.py --p1 submission --p2 examples/simple --games 20
+```
+
+`--p1` plays A and `--p2` plays B; any bot folder works for either. Swap them to test the other side.
+
+```
+p1 submission: 0W 12D 8L  kills 0  deaths 36  faults 0  slowest act 0 ms
+p2 examples/simple: 8W 12D 0L  kills 36  deaths 27  faults 0  slowest act 0 ms
+```
+
+Add `--replay replay.json` to save one game, then open `web/replay.html` in a browser and load the file.
+You can step through the game and see both players' actions at every step.
+
+### Step 3: Submit
 
 Zip the contents of `submission/` (with `policy.py` at the top) as `<team>.zip` and upload it to TBD by TBD.
 Allowed libraries: TBD.
 
-## Evaluation
+### What you can change
 
-Every pair of teams plays TBD games, swapping sides. Teams are ranked by total kills against other teams,
-together with results against TA bots (TBD). The league is run with `league.py`.
+| Path | |
+|---|---|
+| `submission/` | Yours. Change anything, add files. This is what you hand in. |
+| New files you create | Yours: training scripts, notebooks, other bots to test against. Not handed in. |
+| `examples/` | Read and copy. |
+| `bombcompetition/` | Do not change. The league uses its own copy. Reward, rules and opponent are arguments of `BomberEnv`, so training needs no changes here. |
+| `run_match.py`, `league.py`, `web/`, `tests/`, `tools/` | Do not change. |
+
+### Official evaluation
+
+Every pair of teams plays TBD games, swapping sides. Teams are ranked by total kills against other
+teams, together with results against TA bots (TBD). The league runs with `league.py`.
+
+---
 
 ## Open questions (TAs, remove before release)
 
