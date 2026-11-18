@@ -9,7 +9,7 @@ rules, write a bot and train it within about an hour on CPU. Remote: git@github.
 - `bombcompetition/`: the package (`game.py` rules and `RULES`, `env.py` gym-style env, `match.py`, `render.py`).
 - `submission/`: the student's bot (template, the folder they zip and hand in). `examples/simple`: the one example bot
   (plain reading of obs and acting, deliberately weak, like the starter bots of Halite / Lux).
-  `ta_bots/`: TA reference bots (remove before the student release).
+  TA bots are kept outside this repo, since students will see it (league.py takes them with --ta).
 - `run_match.py`, `league.py`: matches and league with the submission limits. `tests/`: rule tests.
 - `web/play.html`: play in the browser (built by `tools/build_web.py`).
 - `README.md`: the student-facing rules and API. Keep it in sync with `RULES`.

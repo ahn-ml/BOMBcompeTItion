@@ -77,10 +77,10 @@ ul.rules { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.65; }
       <div class="card">
         <h2>플레이어</h2>
         <div class="row">
-          <label for="pa">A 넙죽이</label><select id="pa"><option value="human">사람</option><option value="random">Random 봇</option><option value="simple">Simple 봇</option><option value="greedy">Greedy 봇</option></select>
+          <label for="pa">A 넙죽이</label><select id="pa"><option value="human">사람</option><option value="random">Random 봇</option><option value="simple">Simple 봇</option></select>
         </div>
         <div class="row">
-          <label for="pb">B 거위</label><select id="pb"><option value="human">사람</option><option value="random">Random 봇</option><option value="simple" selected>Simple 봇</option><option value="greedy">Greedy 봇</option></select>
+          <label for="pb">B 거위</label><select id="pb"><option value="human">사람</option><option value="random">Random 봇</option><option value="simple" selected>Simple 봇</option></select>
         </div>
         <div class="row">
           <button class="primary" id="start">시작</button><button id="reset">새 게임</button>
@@ -179,54 +179,17 @@ class Game {
   winner() { return this.lives[0] === this.lives[1] ? null : (this.lives[0] > this.lives[1] ? 0 : 1); }
 }
 
-// ---------- opponents for the browser game only (greedy follows ta_bots/greedy) ----------
-const pick = xs => xs[Math.floor(Math.random() * xs.length)];
-function dangerOf(g) { const s = new Set(); for (const k of g.bombs.keys()) for (const x of g.blastCells(Math.floor(k / g.N), k % g.N)) s.add(x); return s; }
-function bfs(g, start, blocked) {
-  const seen = new Map([[g.K(...start), [0, 0]]]), q = [start];
-  while (q.length) {
-    const [r, c] = q.shift(), [d, first] = seen.get(g.K(r, c));
-    for (let a = 1; a <= 4; a++) {
-      const rr = r + D[a][0], cc = c + D[a][1], k = g.K(rr, cc);
-      if (g.walls[rr][cc] || blocked.has(k) || seen.has(k)) continue;
-      seen.set(k, [d + 1, d ? first : a]); q.push([rr, cc]);
-    }
-  }
-  return seen;
-}
+// ---------- opponents for the browser game: the same logic as examples/simple ----------
 const BOTS = {
   random: () => Math.floor(Math.random() * 6),
   simple(g, p) {
-    const me = g.pos[p], op = g.pos[1 - p], danger = dangerOf(g);
-    const opts = [];
-    for (let a = 0; a <= 4; a++) {
-      const r = me[0] + D[a][0], c = me[1] + D[a][1], k = g.K(r, c);
-      if (a === 0 || !(g.walls[r][c] || g.bombs.has(k) || (r === op[0] && c === op[1]))) opts.push([a, k]);
-    }
-    if (g.bombs.size === 0 && Math.random() < 0.1) return 5;
-    const safe = opts.filter(([, k]) => !danger.has(k)).map(([a]) => a);
-    return safe.length ? pick(safe) : pick(opts.map(([a]) => a));
-  },
-  greedy(g, p) {
-    const me = g.pos[p], op = g.pos[1 - p], danger = dangerOf(g), bombKeys = [...g.bombs.keys()];
-    const paths = bfs(g, me, new Set([...bombKeys, g.K(...op)]));
-    if (danger.has(g.K(...me))) {
-      let best = null;
-      for (const [k, [d, a]] of paths) if (!danger.has(k) && (!best || d < best[0] || (d === best[0] && a < best[1]))) best = [d, a];
-      return best ? best[1] : 0;
-    }
-    const myBlast = g.blastCells(...me);
-    if (g.owned(p) < R.maxBombs && myBlast.has(g.K(...op))) {
-      const after = new Set([...danger, ...myBlast]);
-      for (const [k, [d]] of paths) if (!after.has(k) && d < R.fuse) return 5;
-    }
-    const toOp = bfs(g, op, new Set(bombKeys));
-    let best = 0, bd = toOp.has(g.K(...me)) ? toOp.get(g.K(...me))[0] : 99;
-    for (const a of [1, 2, 3, 4].sort(() => Math.random() - .5)) {
-      const k = g.K(me[0] + D[a][0], me[1] + D[a][1]);
-      if (toOp.has(k) && !danger.has(k) && !g.bombs.has(k) && toOp.get(k)[0] < bd) { best = a; bd = toOp.get(k)[0]; }
-    }
-    return best;
+    const [r, c] = g.pos[p], [orow, ocol] = g.pos[1 - p];
+    if (Math.abs(r - orow) + Math.abs(c - ocol) <= 2 && g.owned(p) === 0) return 5;
+    const free = [1, 2, 3, 4].filter(a => {
+      const rr = r + D[a][0], cc = c + D[a][1];
+      return !g.walls[rr][cc] && !g.bombs.has(g.K(rr, cc)) && !(rr === orow && cc === ocol);
+    });
+    return free.length ? free[Math.floor(Math.random() * free.length)] : 0;
   },
 };
 
