@@ -148,10 +148,19 @@ from bombcompetition import Rules
 env = BomberEnv(opponent=opponent.act, rules=Rules(max_bombs=3, fuse=8, lives=5))
 ```
 
+## What you can change
+
+| Path | |
+|---|---|
+| `submission/` | Yours. Change anything and add files (helper modules, model weights). This folder is what you hand in. |
+| Anything new you create | Yours, e.g. training scripts, notebooks, other bot folders to test against. Not handed in. |
+| `examples/` | Read it and copy from it. |
+| `bombcompetition/` | Do not change. Your bot may import it, but the league runs its own unchanged copy, so a bot that depends on your changes will break there. |
+| `run_match.py`, `league.py`, `web/`, `tests/`, `tools/` | Do not change. They are the tools we provide. |
+
 ## Submission
 
 Zip the contents of `submission/` (with `policy.py` at the top) as `<team>.zip` and upload it to TBD by TBD.
-Only change files in `submission/`; the league uses its own copy of `bombcompetition/`.
 Allowed libraries: TBD.
 
 ## Evaluation
