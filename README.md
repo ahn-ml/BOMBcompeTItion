@@ -141,7 +141,8 @@ class Policy:
 ```
 
 A new `Policy` is created for every game. Load files relative to the folder:
-`Path(__file__).parent / "weights.npz"`. `examples/simple/policy.py` is a small example.
+`Path(__file__).parent / "weights.npz"`. Examples: `examples/simple` (reads `obs` and acts, weak) and
+`examples/greedy` (dodges bombs and chases the opponent).
 
 > **Note:** if `act` raises an exception or returns something other than 0-5, the bot stays for that
 > step and it counts as a fault. Time limits: TBD.
