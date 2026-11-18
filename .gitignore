@@ -1,0 +1,5 @@
+ref-bomberland/
+.kickoff/
+.venv/
+__pycache__/
+league_results.csv
