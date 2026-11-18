@@ -10,10 +10,10 @@ import argparse
 
 from bombcompetition import load_policy, play_match, play_series
 
-ap = argparse.ArgumentParser()
-ap.add_argument("bot_a")
-ap.add_argument("bot_b")
-ap.add_argument("--games", type=int, default=10)
+ap = argparse.ArgumentParser(description="Play two bots against each other. Each bot is a folder with policy.py.")
+ap.add_argument("bot_a", help="first bot's folder, e.g. submission")
+ap.add_argument("bot_b", help="second bot's folder, e.g. examples/simple")
+ap.add_argument("--games", type=int, default=10, help="number of games; the bots swap sides (A/B) every game")
 ap.add_argument("--gif", help="instead, play one game (bot_a as A) and save it as a GIF")
 args = ap.parse_args()
 bots = load_policy(args.bot_a), load_policy(args.bot_b)
