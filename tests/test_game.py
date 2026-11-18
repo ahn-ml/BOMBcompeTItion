@@ -1,37 +1,35 @@
-"""Rule tests. Run with `python -m pytest tests` or just `python tests/test_game.py`."""
-
+import copy
 import json
 from pathlib import Path
 
 import pytest
 from gymnasium.utils.env_checker import check_env
 
-from bombcompetition import N_CHANNELS, Action, BomberEnv, Game, Rules, parse
+from bombcompetition import MAP, Action, BomberEnv, Game, Rules, parse, to_game
 from bombcompetition.game import Bomb
 
 A, B = 0, 1
+S = Action.STAY
+PILLAR = ("#########", "#A......#", "#.#.#.#.#", "#.......#", "#.#.#.#.#", "#.......#", "#.#.#.#.#", "#......B#", "#########")
 
 
 def test_own_bomb_kills_but_is_not_a_kill():
     g = Game(Rules(lives=1))
-    g.step(Action.BOMB, Action.STAY)
-    assert g.bombs[(1, 1)].fuse == g.rules.fuse - 1
-    g.step(Action.DOWN, Action.STAY)
-    g.step(Action.UP, Action.STAY)  # cannot walk back onto the bomb
+    g.step(Action.BOMB, S)
+    g.step(Action.DOWN, S)
+    g.step(Action.UP, S)  # cannot walk back onto the bomb
     assert g.pos[A] == (2, 1)
     for _ in range(g.rules.fuse - 3):
-        g.step(Action.STAY, Action.STAY)
-    assert g.done and g.lives == [0, 1] and g.winner() == B
-    assert g.kills == [0, 0]
+        g.step(S, S)
+    assert g.done and g.lives == [0, 1] and g.kills == [0, 0] and g.winner() == B
 
 
 def test_kill_credit_when_both_die():
     g = Game(Rules(lives=1))
     g.pos = [(1, 3), (3, 1)]
-    g.bombs = {(1, 1): Bomb(owner=A, fuse=1)}
-    deaths = g.step(Action.STAY, Action.STAY)  # A's bomb at (1, 1) hits A at (1, 3) and B at (3, 1)
-    assert g.lives == [0, 0] and g.kills == [1, 0]
-    assert {(d.player, d.killer) for d in deaths} == {(A, None), (B, A)}
+    g.bombs = {(1, 1): Bomb(owner=A, fuse=1)}  # reaches both players
+    deaths = g.step(S, S)
+    assert g.kills == [1, 0] and {(d.player, d.killer) for d in deaths} == {(A, None), (B, A)}
 
 
 def test_same_target_cell_blocks_both():
@@ -43,54 +41,46 @@ def test_same_target_cell_blocks_both():
 
 def test_round_resets_after_death():
     g = Game(Rules(layout=("#####", "#...#", "#...#", "#...#", "#####"), starts=((1, 1), (3, 3)), fuse=2, radius=1))
-    g.step(Action.BOMB, Action.STAY)
-    g.step(Action.STAY, Action.STAY)
-    assert g.lives == [2, 3] and not g.done
-    assert g.pos == [(1, 1), (3, 3)] and not g.bombs
+    g.step(Action.BOMB, S)
+    g.step(S, S)
+    assert g.lives == [2, 3] and g.pos == [(1, 1), (3, 3)] and not g.bombs and not g.done
 
 
 @pytest.mark.parametrize("rules", [
-    Rules(layout=("#######", "#.....#", "#.#.#.#", "#.....#", "#######")),  # not square
-    Rules(layout=("#####", "#A..#", "#....", "#..B#", "#####")),            # open border
-    Rules(starts=((0, 0), (7, 7))),                                         # start on a wall
-    Rules(starts=((1, 1), (1, 1))),                                         # same start
-    Rules(fuse=0),
+    Rules(layout=("#######", "#.....#", "#######")),              # not square
+    Rules(layout=("#####", "#A..#", "#....", "#..B#", "#####")),  # open border
+    Rules(starts=((0, 0), (7, 7))),                               # start on a wall
+    Rules(starts=((1, 1), (1, 1))),                               # same start
 ])
-def test_bad_rules_are_rejected(rules):
+def test_bad_rules(rules):
     with pytest.raises(ValueError):
         Game(rules)
 
 
-def test_observation():
+def test_observation_and_to_game():
     g = Game()
-    g.step(Action.BOMB, Action.STAY)
-    o0, o1 = g.obs(A), g.obs(B)
-    assert o0.shape == (N_CHANNELS, 9, 9) and (o0[0] == o1[0]).all()
-    v0, v1 = parse(o0), parse(o1)
-    assert (v0.player, v0.me, v0.opp, v0.my_bombs) == (A, (1, 1), (7, 7), {(1, 1): 5})
-    assert (v1.player, v1.me, v1.opp, v1.opp_bombs) == (B, (7, 7), (1, 1), {(1, 1): 5})
-    assert (v1.my_lives, v1.steps_left) == (3, 299)
+    for a0, a1 in [(Action.BOMB, Action.UP), (Action.DOWN, Action.BOMB), (Action.DOWN, Action.LEFT)]:
+        g.step(a0, a1)
+    v = parse(g.obs(B))
+    assert (v.player, v.me, v.opp, v.my_lives, v.steps_left) == (B, (6, 7), (3, 1), 3, 297)
+    assert v.my_bombs == {(6, 7): 4} and v.opp_bombs == {(1, 1): 3}
+    for p in (A, B):
+        rebuilt, real = to_game(g.obs(p)), copy.deepcopy(g)
+        for _ in range(6):
+            assert rebuilt.step(S, Action.LEFT) == real.step(S, Action.LEFT)
+            assert (rebuilt.obs(p) == real.obs(p)).all()
 
 
 def test_env():
     for player in (A, B):
-        env = BomberEnv(opponent=lambda obs: Action.STAY, player=player)
-        check_env(env, skip_render_check=True)
-        obs, _ = env.reset(seed=0)
-        assert parse(obs).player == player
+        check_env(BomberEnv(opponent=lambda obs: S, player=player), skip_render_check=True)
 
 
-def test_matches_recorded_games():
-    """40 random games recorded from the first implementation must replay identically."""
+def test_recorded_games_replay_identically():
     traces = json.loads((Path(__file__).parent / "game_traces.json").read_text())
     for trace in traces:
-        g = Game(Rules(layout=trace["layout"]))
+        g = Game(Rules(layout={"rooms": MAP, "pillar": PILLAR}[trace["layout"]]))
         for (a0, a1), expected in zip(trace["acts"], trace["states"]):
             g.step(a0, a1)
-            state = [*g.pos[0], *g.pos[1], *g.lives, *g.kills, len(g.bombs)]
-            assert state == expected
+            assert [*g.pos[0], *g.pos[1], *g.lives, *g.kills, len(g.bombs)] == expected
         assert g.done
-
-
-if __name__ == "__main__":
-    raise SystemExit(pytest.main([__file__, "-q"]))

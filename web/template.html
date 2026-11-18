@@ -91,7 +91,6 @@ ul.rules { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.65; }
       <div class="card">
         <h2>규칙 설정</h2>
         <div class="row">
-          <label for="map">맵</label><select id="map"><option value="rooms">rooms</option><option value="pillar">pillar</option></select>
           <label for="fuse">fuse</label><input id="fuse" type="number" min="1" max="12" value="6">
           <label for="rad">반경</label><input id="rad" type="number" min="0" max="8" value="2">
         </div>
@@ -122,10 +121,7 @@ ul.rules { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.65; }
 
 <script>
 const SPR = /*SPRITES*/;
-const MAPS = {
-  rooms: ["#########","#A..#...#","#.#.#.#.#","#.#...#.#","#...#...#","#.#...#.#","#.#.#.#.#","#...#..B#","#########"],
-  pillar: ["#########","#A......#","#.#.#.#.#","#.......#","#.#.#.#.#","#.......#","#.#.#.#.#","#......B#","#########"],
-};
+const MAP = ["#########","#A..#...#","#.#.#.#.#","#.#...#.#","#...#...#","#.#...#.#","#.#.#.#.#","#...#..B#","#########"];
 const D = [[0,0],[-1,0],[1,0],[0,-1],[0,1],[0,0]];
 const NAMES = ["넙죽이", "거위"];
 let R = {};
@@ -133,7 +129,7 @@ let R = {};
 // ---------- game rules: mirrors bombcompetition/game.py ----------
 class Game {
   constructor() {
-    const rows = MAPS[R.layout];
+    const rows = MAP;
     this.N = rows.length;
     this.walls = rows.map(r => [...r].map(ch => ch === "#"));
     const find = ch => { for (let r = 0; r < this.N; r++) { const c = rows[r].indexOf(ch); if (c >= 0) return [r, c]; } };
@@ -176,15 +172,14 @@ class Game {
     for (const p of hurt) { this.lives[p]--; if (hitBy[p].has(1 - p)) { this.kills[1 - p]++; credit.push(1 - p); } }
     this.t++;
     this.done = Math.min(...this.lives) <= 0 || this.t >= R.maxSteps;
-    const deadAt = hurt.map(p => this.pos[p].slice());
     if (hurt.length && !this.done) this.resetRound();
     this.lastBlast = blast;
-    return { hurt, credit, deadAt };
+    return { hurt, credit };
   }
   winner() { return this.lives[0] === this.lives[1] ? null : (this.lives[0] > this.lives[1] ? 0 : 1); }
 }
 
-// ---------- bots: mirror examples/{random,simple,greedy}/policy.py ----------
+// ---------- bots: mirror agents/{random,simple}/policy.py and ta_bots/greedy/policy.py ----------
 const pick = xs => xs[Math.floor(Math.random() * xs.length)];
 function dangerOf(g) { const s = new Set(); for (const k of g.bombs.keys()) for (const x of g.blastCells(Math.floor(k / g.N), k % g.N)) s.add(x); return s; }
 function bfs(g, start, blocked) {
@@ -280,7 +275,7 @@ function keysHelp() {
 }
 function readRules() {
   const num = (id, lo, hi, dflt) => Math.min(hi, Math.max(lo, parseInt($(id).value, 10) || dflt));
-  R = { layout: $("map").value, fuse: num("fuse", 1, 12, 6), radius: num("rad", 0, 8, 2), maxBombs: num("mb", 1, 5, 2), lives: num("lives", 1, 9, 3), maxSteps: num("maxt", 20, 2000, 300) };
+  R = { fuse: num("fuse", 1, 12, 6), radius: num("rad", 0, 8, 2), maxBombs: num("mb", 1, 5, 2), lives: num("lives", 1, 9, 3), maxSteps: num("maxt", 20, 2000, 300) };
 }
 function reset() {
   stop(); readRules(); g = new Game(); pending = [0, 0];
@@ -314,7 +309,7 @@ function tick() {
 
 $("start").onclick = () => timer ? stop() : start();
 $("reset").onclick = reset;
-["pa", "pb", "map", "fuse", "rad", "mb", "lives", "maxt"].forEach(id => $(id).addEventListener("change", reset));
+["pa", "pb", "fuse", "rad", "mb", "lives", "maxt"].forEach(id => $(id).addEventListener("change", reset));
 $("spd").addEventListener("change", () => { if (timer) { stop(); start(); } });
 
 const KEYS_A = { w: 1, s: 2, a: 3, d: 4, " ": 5 };

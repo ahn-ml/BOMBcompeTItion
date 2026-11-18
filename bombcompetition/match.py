@@ -1,32 +1,35 @@
-"""Load submitted policies and play games between them."""
+"""Loading bots and playing games between them."""
 
 import importlib.util
+import signal
+import time
 from collections.abc import Callable
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
 
-from .game import Game
+from .game import RULES, Action, Game, Rules
 from .render import save_gif, to_rgb
-from .rules import RULES, Rules
 
-ActFn = Callable[[np.ndarray], int]
+ACT_TIMEOUT = 0.1  # seconds per act()
+INIT_TIMEOUT = 10.0  # seconds for Policy()
 
 
 def load_policy(folder: str | Path) -> type:
-    """Import <folder>/policy.py and return its Policy class."""
+    """The Policy class from <folder>/policy.py."""
     path = Path(folder).resolve() / "policy.py"
-    spec = importlib.util.spec_from_file_location(f"policy_{path.parent.name}_{id(path)}", path)
+    spec = importlib.util.spec_from_file_location(f"policy_{abs(hash(path))}", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module.Policy
 
 
-def play_match(act0: ActFn, act1: ActFn, rules: Rules = RULES, gif: str | Path | None = None) -> Game:
-    """Play one game (act0 is A, act1 is B) and return the finished Game.
-    With `gif`, also save the game as an animated GIF."""
+def play_match(act0: Callable[[np.ndarray], int], act1: Callable[[np.ndarray], int],
+               rules: Rules = RULES, gif: str | Path | None = None) -> Game:
+    """Play one game, act0 as A and act1 as B, and return the finished game (optionally saved as a GIF)."""
     game = Game(rules)
-    frames = [to_rgb(game)] if gif else None
+    frames = [to_rgb(game)] if gif else []
     while not game.done:
         game.step(act0(game.obs(0)), act1(game.obs(1)))
         if gif:
@@ -34,3 +37,80 @@ def play_match(act0: ActFn, act1: ActFn, rules: Rules = RULES, gif: str | Path |
     if gif:
         save_gif(frames, gif)
     return game
+
+
+def _timeout(signum, frame):
+    raise TimeoutError
+
+
+class SafeBot:
+    """Runs a submitted Policy under the league limits. A timeout, an exception or an
+    invalid action makes the bot STAY for that step and counts as a fault."""
+
+    def __init__(self, policy_cls: type):
+        self.faults, self.errors, self.slowest = 0, [], 0.0
+        _, self.policy = self._call(policy_cls, INIT_TIMEOUT)
+
+    def _fault(self, message: str):
+        self.faults += 1
+        if len(self.errors) < 5:
+            self.errors.append(message)
+
+    def _call(self, fn, seconds, *args):
+        # ponytail: SIGALRM is Unix-only and cannot stop a long C call; use a process per bot if needed
+        signal.signal(signal.SIGALRM, _timeout)
+        signal.setitimer(signal.ITIMER_REAL, seconds)
+        try:
+            return True, fn(*args)
+        except Exception as e:
+            self._fault(f"{getattr(fn, '__qualname__', fn)}: {e!r}")
+            return False, None
+        finally:
+            signal.setitimer(signal.ITIMER_REAL, 0)
+
+    def act(self, obs: np.ndarray) -> int:
+        if self.policy is None:
+            return Action.STAY
+        start = time.perf_counter()
+        ok, action = self._call(self.policy.act, ACT_TIMEOUT, obs)
+        self.slowest = max(self.slowest, time.perf_counter() - start)
+        if ok and isinstance(action, (int, np.integer)) and 0 <= action <= 5:
+            return int(action)
+        if ok:
+            self._fault(f"act returned {action!r}, expected an int 0-5")
+        return Action.STAY
+
+
+@dataclass
+class Record:
+    kills: int = 0
+    deaths: int = 0
+    wins: int = 0
+    draws: int = 0
+    losses: int = 0
+    faults: int = 0
+    slowest: float = 0.0  # seconds, slowest act()
+    errors: list[str] = field(default_factory=list)
+
+
+def play_series(bot_a: type, bot_b: type, games: int, rules: Rules = RULES) -> tuple[Record, Record]:
+    """Play `games` games between two Policy classes under the league limits, swapping sides each game."""
+    records = (Record(), Record())
+    for i in range(games):
+        order = (0, 1) if i % 2 == 0 else (1, 0)  # order[side] = which bot plays that side
+        bots = [SafeBot((bot_a, bot_b)[order[side]]) for side in (0, 1)]
+        game = Game(rules)
+        while not game.done:
+            game.step(bots[0].act(game.obs(0)), bots[1].act(game.obs(1)))
+        winner = game.winner()
+        for side, bot in enumerate(bots):
+            r = records[order[side]]
+            r.kills += game.kills[side]
+            r.deaths += rules.lives - game.lives[side]
+            r.wins += winner == side
+            r.draws += winner is None
+            r.losses += winner == 1 - side
+            r.faults += bot.faults
+            r.slowest = max(r.slowest, bot.slowest)
+            r.errors += bot.errors[: 5 - len(r.errors)]
+    return records

@@ -1,38 +1,60 @@
-"""The game itself. One step = both players act at the same time:
+"""Rules and game engine.
 
-1. Bomb: a player places a bomb on its own cell (at most `max_bombs` of its own at once).
-2. Move: blocked by walls, bombs and the other player's current cell.
-   If both players move into the same cell, neither moves.
-3. Every bomb's fuse goes down by 1. At 0 it explodes in a cross of `radius`
-   cells, stopped by walls, and sets off other bombs it reaches (chain).
-   A player inside an explosion loses a life. It counts as a kill only when
-   the other player's bomb was part of that explosion.
-4. After a death both players go back to their start cells and bombs are cleared.
-
-The game ends when a player has no lives left or after `max_steps`.
+Each step both players act at the same time:
+1. BOMB drops a bomb on your cell (at most `max_bombs` of yours at once).
+2. Moves are blocked by walls, bombs and the other player; two players moving into one cell both stay.
+3. Fuses tick down. A bomb at 0 explodes in a cross of `radius` cells, stopped by walls,
+   setting off other bombs it reaches. A player in the explosion loses a life; it is a kill
+   for the opponent if the opponent's bomb was part of it.
+4. After a death both players return to their start cells and all bombs are removed.
+The game ends when someone has no lives left or after `max_steps`.
 """
 
 from dataclasses import dataclass
+from enum import IntEnum
 
 import numpy as np
 
-from .rules import DELTAS, RULES, Action, Rules
+Cell = tuple[int, int]  # (row, col), row 0 is the top
 
-Cell = tuple[int, int]
-N_CHANNELS = 9
+MAP = (
+    "#########",
+    "#A..#...#",
+    "#.#.#.#.#",
+    "#.#...#.#",
+    "#...#...#",
+    "#.#...#.#",
+    "#.#.#.#.#",
+    "#...#..B#",
+    "#########",
+)
 
 
-def blast_cells(walls: np.ndarray, cell: Cell, radius: int) -> set[Cell]:
-    """Cells hit by a bomb at `cell`: a cross of `radius` cells that stops at walls."""
-    r, c = cell
-    cells = {cell}
-    for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-        for k in range(1, radius + 1):
-            t = (r + dr * k, c + dc * k)
-            if walls[t]:
-                break
-            cells.add(t)
-    return cells
+class Action(IntEnum):
+    STAY = 0
+    UP = 1
+    DOWN = 2
+    LEFT = 3
+    RIGHT = 4
+    BOMB = 5
+
+
+DELTAS = ((0, 0), (-1, 0), (1, 0), (0, -1), (0, 1), (0, 0))  # (d_row, d_col) per action
+MOVES = (Action.UP, Action.DOWN, Action.LEFT, Action.RIGHT)
+
+
+@dataclass(frozen=True)
+class Rules:
+    layout: tuple[str, ...] = MAP  # '#' wall, '.' floor, 'A'/'B' start cells; border must be walls
+    starts: tuple[Cell, Cell] | None = None  # overrides the 'A'/'B' cells
+    fuse: int = 6  # steps from dropping a bomb to its explosion
+    radius: int = 2  # explosion reach in each direction
+    max_bombs: int = 2  # bombs per player on the board at once
+    lives: int = 3
+    max_steps: int = 300
+
+
+RULES = Rules()  # the official league rules
 
 
 @dataclass
@@ -44,26 +66,34 @@ class Bomb:
 @dataclass(frozen=True)
 class Death:
     player: int
-    killer: int | None  # the other player, or None for a suicide
+    killer: int | None  # the opponent, or None for a suicide
+
+
+def blast_cells(walls: np.ndarray, cell: Cell, radius: int) -> set[Cell]:
+    """Cells hit by a bomb at `cell`."""
+    cells = {cell}
+    for dr, dc in DELTAS[1:5]:
+        for k in range(1, radius + 1):
+            t = (cell[0] + dr * k, cell[1] + dc * k)
+            if walls[t]:
+                break
+            cells.add(t)
+    return cells
 
 
 class Game:
-    """Two-player game. Players are 0 (A) and 1 (B). Positions are (row, col)."""
+    """Players are 0 (A) and 1 (B)."""
 
     def __init__(self, rules: Rules = RULES):
-        rows = rules.rows
-        self.size = len(rows)
-        if any(len(row) != self.size for row in rows):
-            raise ValueError("map must be square")
-        self.walls = np.array([[ch == "#" for ch in row] for row in rows])
-        if not (self.walls[0].all() and self.walls[-1].all() and self.walls[:, 0].all() and self.walls[:, -1].all()):
-            raise ValueError("map border must be all walls")
-        starts = rules.starts or [self._find(rows, ch) for ch in "AB"]
-        self.starts = [tuple(s) for s in starts]
-        if self.starts[0] == self.starts[1] or any(self.walls[s] for s in self.starts):
-            raise ValueError(f"bad start cells {self.starts}")
-        if rules.fuse < 1 or rules.radius < 0 or rules.max_bombs < 1 or rules.lives < 1:
-            raise ValueError(f"bad rules {rules}")
+        layout = rules.layout
+        self.size = len(layout)
+        self.walls = np.array([[ch == "#" for ch in row] for row in layout])
+        find = {ch: (r, row.index(ch)) for r, row in enumerate(layout) for ch in "AB" if ch in row}
+        self.starts = list(rules.starts or (find.get("A"), find.get("B")))
+        if self.walls.shape != (self.size, self.size) or not (self.walls[[0, -1]].all() and self.walls[:, [0, -1]].all()):
+            raise ValueError("the map must be square with walls all around")
+        if None in self.starts or self.starts[0] == self.starts[1] or any(self.walls[s] for s in self.starts):
+            raise ValueError(f"bad start cells: {self.starts}")
 
         self.rules = rules
         self.lives = [rules.lives, rules.lives]
@@ -72,27 +102,20 @@ class Game:
         self.done = False
         self._new_round()
 
-    @staticmethod
-    def _find(rows, ch) -> Cell:
-        for r, row in enumerate(rows):
-            if ch in row:
-                return (r, row.index(ch))
-        raise ValueError(f"no '{ch}' start cell in the map")
-
     def _new_round(self):
         self.pos: list[Cell] = list(self.starts)
         self.bombs: dict[Cell, Bomb] = {}
-        self.last_blast: set[Cell] = set()  # cells that exploded in the last step (for rendering)
+        self.last_blast: set[Cell] = set()  # cells that exploded in the last step
 
     def step(self, a0: int, a1: int) -> list[Death]:
-        """Advance one step with both players' actions. Returns who died this step."""
+        """Play one step and return who died in it."""
         if self.done:
-            raise RuntimeError("game is over")
-        actions = (Action(int(a0)), Action(int(a1)))
+            raise RuntimeError("the game is over")
+        actions = (Action(a0), Action(a1))
 
         for p, a in enumerate(actions):
-            owned = sum(b.owner == p for b in self.bombs.values())
-            if a == Action.BOMB and owned < self.rules.max_bombs and self.pos[p] not in self.bombs:
+            mine = sum(b.owner == p for b in self.bombs.values())
+            if a == Action.BOMB and mine < self.rules.max_bombs and self.pos[p] not in self.bombs:
                 self.bombs[self.pos[p]] = Bomb(p, self.rules.fuse)
 
         targets = [self._target(p, a) for p, a in enumerate(actions)]
@@ -100,14 +123,11 @@ class Game:
             self.pos = targets
 
         blast, hit_by = self._explode()
-        deaths = []
-        for p in (0, 1):
-            if self.pos[p] in blast:
-                killer = 1 - p if 1 - p in hit_by[p] else None
-                deaths.append(Death(p, killer))
-                self.lives[p] -= 1
-                if killer is not None:
-                    self.kills[killer] += 1
+        deaths = [Death(p, 1 - p if 1 - p in hit_by[p] else None) for p in (0, 1) if self.pos[p] in blast]
+        for d in deaths:
+            self.lives[d.player] -= 1
+            if d.killer is not None:
+                self.kills[d.killer] += 1
 
         self.t += 1
         self.done = min(self.lives) <= 0 or self.t >= self.rules.max_steps
@@ -119,22 +139,19 @@ class Game:
     def _target(self, p: int, a: Action) -> Cell:
         (r, c), (dr, dc) = self.pos[p], DELTAS[a]
         t = (r + dr, c + dc)
-        if t == self.pos[p] or self.walls[t] or t in self.bombs or t == self.pos[1 - p]:
-            return self.pos[p]
-        return t
+        blocked = self.walls[t] or t in self.bombs or t == self.pos[1 - p]
+        return self.pos[p] if blocked and t != self.pos[p] else t
 
     def _explode(self) -> tuple[set[Cell], list[set[int]]]:
-        """Tick all fuses and resolve (chained) explosions.
-        Returns the exploded cells and, per player, the owners of the bombs that hit them."""
+        """Tick fuses and resolve chained explosions.
+        Returns the exploded cells and, per player, the owners of the bombs that reached them."""
         for b in self.bombs.values():
             b.fuse -= 1
-        blast: set[Cell] = set()
-        hit_by: list[set[int]] = [set(), set()]
+        blast, hit_by = set(), [set(), set()]
         queue = [cell for cell, b in self.bombs.items() if b.fuse <= 0]
         while queue:
             cell = queue.pop()
-            bomb = self.bombs.pop(cell, None)
-            if bomb is None:
+            if (bomb := self.bombs.pop(cell, None)) is None:
                 continue
             hit = blast_cells(self.walls, cell, self.rules.radius)
             blast |= hit
@@ -145,15 +162,15 @@ class Game:
         return blast, hit_by
 
     def winner(self) -> int | None:
-        """The player with more lives left, or None for a draw."""
+        """The player with more lives left, None for a draw."""
         if self.lives[0] == self.lives[1]:
             return None
-        return 0 if self.lives[0] > self.lives[1] else 1
+        return int(self.lives[1] > self.lives[0])
 
     def obs(self, p: int) -> np.ndarray:
-        """Observation of player p, float32 (N_CHANNELS, size, size). Layout: bombcompetition/observation.py"""
+        """What player p sees. Channel layout: see bombcompetition/view.py."""
         r = self.rules
-        o = np.zeros((N_CHANNELS, self.size, self.size), dtype=np.float32)
+        o = np.zeros((9, self.size, self.size), dtype=np.float32)
         o[0] = self.walls
         o[1][self.pos[p]] = 1
         o[2][self.pos[1 - p]] = 1

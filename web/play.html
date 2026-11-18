@@ -91,7 +91,6 @@ ul.rules { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.65; }
       <div class="card">
         <h2>규칙 설정</h2>
         <div class="row">
-          <label for="map">맵</label><select id="map"><option value="rooms">rooms</option><option value="pillar">pillar</option></select>
           <label for="fuse">fuse</label><input id="fuse" type="number" min="1" max="12" value="6">
           <label for="rad">반경</label><input id="rad" type="number" min="0" max="8" value="2">
         </div>
@@ -122,10 +121,7 @@ ul.rules { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.65; }
 
 <script>
 const SPR = {"blast": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAABbklEQVQ4jY1TPW+CUBQ9z/jRjTg11oTQmHQQpy7GxQ0H8W908jcw8Rvs0r8hDrJ1IS5M4kDSSEiscSIsjcDwOjTv8Z5o45m4l3vO/Xj3EvyDpdanoj2LduQypuIQibqaSf4gblVEJGM/7tEgbnFid3Dk/w7bzlWRukgWxZ7ezqBol/boDOIlCGIN+3GPPn9+EUkgiFsAAMNOAQDN1xepfMc8AVCgqxmP5S0stT7V1QzdwRHrlQYAMJ1HSaBYbEBHbbhWKTKLdqTGAhh5Mo1g2ClyP5QEGvMhiJdUZlNj2e9BYz7k37qaYan1aU0MMOyUt3A5AwDI/RCGnYKOyuHWxQDiJTDs6+Rb4BWwd3YtBbkfwjFPKBYbFIsNHPOE3A/hWgqIl+D746FMCsgrO5lGvETXUnhrrELWIvC32nyj9uMeZdNlr3ELzfcfzpOGeNh2sF5plRtgWQ/bDm9VakGsQrwFBtHHVviqAMM9Z8zwCyP4oC36gqlWAAAAAElFTkSuQmCC", "bomb_a": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAABE0lEQVQ4jY1TMU7EMBCcnK5Ni7QdcGjzANLQnEQViSYNLQU0KVAqdK9AV/EASiqqRKKiofcHIuA6PpAHLM15L7b3OEZy4fXMeLy2M9iQPfXsYAGAnD1/m+rP29NEM7eI8/efPQH+DwEg5xeXcnV9J35uEWeWkJkT4raWGE3PI8yMPM8BAOM4YhgGFRv1DIh64ElEBCJCnKTrOpRlGdR8At2diKyjBiZFUWiKuAcHESeYAZB2tf5T1Pe9Do+tRjRBVTd4eX0zxZvlQodzDlXd6Lr2wKdo728CAz4+wma50PnJxxfa1RpPjw8AkCXXWNVNYGIZTDdPDIDddXo453aGzME7iD+TeJIF/7CmOus3qpGBhP8LkwxgQAx8eA8AAAAASUVORK5CYII=", "bomb_b": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAABFklEQVQ4jY1ToU4EMRB9e8Eg1pKMg1wy+wGswVyC2gSzBovBbAhZRc7wARhyCsEnoFC7CZ5g+wObkDPwBSuQg7nObds5jpdUdPre6+u0zWBDdtSzvQUA8vPwbKoP728SzYFF/P742hHg/xAAcnp2LheX1+LnFnFmCZk5IW5qidH0PMLMyPMcADCOI4ZhULFRz4CoB55ERCAixEm6rkNZlkHNJ9Ddicg6amBSFIWmiHuwF3GCGQBpl6s/RX3f6/DYaEQTVHWDl9c3U7xezHU451DVja5rD3yK9vYqMODjI6wXc52fvH+iXa7w9HgHAFlyjVXdBCaWwXTzxADYXqeHc25ryBy8g/gziSdZ8A9rqrN+oxoZSPi/vLRhJna+vskAAAAASUVORK5CYII=", "floor_1": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAABmJLR0QA/wD/AP+gvaeTAAAARUlEQVQokWNkYBBgIAUwkaR60Gj4QKKGTYeJ1/CBYdPmWWqaDJs2w+1hJBysmzYz+PnCeURoYPiArIYYDShgcMTDYNcAAP/ZC1XTuCS6AAAAAElFTkSuQmCC", "floor_2": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAABmJLR0QA/wD/AP+gvaeTAAAAVElEQVQokWNkYBBgIAUwkaR6VMPAaVDkUiNNQ4nrJWQuMwMDBx6zW72eykTx2P7+dv2x1offbxkYGBgJpqWp/j+yNyIMxWcDBMDNhgDCNqABkoMVAPifE2mxi63yAAAAAElFTkSuQmCC", "floor_3": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAABmJLR0QA/wD/AP+gvaeTAAAAKElEQVQokWNkYBBgIAUwkaSadhpa7sCZjIPZDxtXshCjYVD7YQRpAAAhmwMMiLz68QAAAABJRU5ErkJggg==", "floor_4": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAABmJLR0QA/wD/AP+gvaeTAAAASUlEQVQokWNkYBBgIAUwkaR6VMOAauBm2ESahhRNFWI1cDNsyte8Zhv/PF/zGsQeRmLSUr7mtYnXtUhw0pzrd+BsomxABiQHKwCQZQzkoDWlLgAAAABJRU5ErkJggg==", "floor_5": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAABmJLR0QA/wD/AP+gvaeTAAAAPUlEQVQokWNkYBBgIAUwEamOm2ETCRq4GTalaKpA9DAS6SRuhk1fGfxI0AAHxPphaGgQ2i5KjIYRHkpEAgD3MAYjBefd3AAAAABJRU5ErkJggg==", "player_a": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA70lEQVR4nKWTMQ6CQBBFP4RLWJFgD97BikLvYOIlCLXhEHIJbaiwNhQE6CXZRo6xFmY2w+yiJk6zsP+/2ZkdAP4MT27EUaKXzMPYW/5AgodLZ8TbfZq7i1TLRB7BBFqQI1SRmiQ+F36BASDMKlOxR6cTfD2uAAD70k4mNVWk7woknKw35lnCUpu1QIalcGkBf9mXE/pH52zB0poWAJtCmFWLJ1vRtFB1jmHsPTNPutVwe/rIqjoH4P6oEEeJjqNE785PrbV2ruQhxucwb4PuQK7A/DuYTUEV6df2pc9MgXri5XEjr876F3jwBNy4tP8ChHKPDePwWoAAAAAASUVORK5CYII=", "player_b": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAwklEQVR4nGNgoBAwogvoKen/R+ZfuncRQw1OoKek/x8doBtIUDOphrDAJM96vmP4kyPHcPHuI6JdzMDAwMAE0wwD+soGKAr0lQ0Ih4Oekv5/GEb2DjFhwMLAQGJIYzMAH7h49wKDvrIB8VGLLRawxQpWr+HTfPzOhf/H71zAMIiJGH+euHuRgYGBgcFCWR9DDsMAmGJkYKGsj6EZpg5rXpi5ayFBV6W7xRMOzN/ZsihpA5mP0wswxcipExmc9XyHkmMBX3HJEvMUW4wAAAAASUVORK5CYII=", "wall": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAABJklEQVQ4jWNkYGBg0FPSf8tAIrh076IwAwMDA6Oekv5bDi4uodT6SgYGBgaG2Y3tDDA2PjC7sZ0hvbpCmomBgQFFg5CcHUNKiC9BA1LrKxkm1dRfZYEJwDStnX+UYc6azQQNmbNmMwPcCwwMDEJSGh4MDAwMDM9u7GBAZjMwMMD5MAATZ2Rk/MDCwMDAkNvZjCRtDWdNLt8BZwcnWmOomVJRx8CE7Hx0kNvZzCCl4YGmGRUw4ZRBAvjCgygD8AG4AdhswWczXE5PSf/t7NWb/mMDs1dv+q+npI9TTl/Z4D08HXh6V+C0bc6azQxr5x/F7wVyAcUGsFy6d1F4dmP7fyE5O5I0BidaMzD9sdJmZGBgYJi7fKPUpJr6q6QYkNfSqP345vkXAImqgSDDtlJwAAAAAElFTkSuQmCC"};
-const MAPS = {
-  rooms: ["#########","#A..#...#","#.#.#.#.#","#.#...#.#","#...#...#","#.#...#.#","#.#.#.#.#","#...#..B#","#########"],
-  pillar: ["#########","#A......#","#.#.#.#.#","#.......#","#.#.#.#.#","#.......#","#.#.#.#.#","#......B#","#########"],
-};
+const MAP = ["#########","#A..#...#","#.#.#.#.#","#.#...#.#","#...#...#","#.#...#.#","#.#.#.#.#","#...#..B#","#########"];
 const D = [[0,0],[-1,0],[1,0],[0,-1],[0,1],[0,0]];
 const NAMES = ["넙죽이", "거위"];
 let R = {};
@@ -133,7 +129,7 @@ let R = {};
 // ---------- game rules: mirrors bombcompetition/game.py ----------
 class Game {
   constructor() {
-    const rows = MAPS[R.layout];
+    const rows = MAP;
     this.N = rows.length;
     this.walls = rows.map(r => [...r].map(ch => ch === "#"));
     const find = ch => { for (let r = 0; r < this.N; r++) { const c = rows[r].indexOf(ch); if (c >= 0) return [r, c]; } };
@@ -176,15 +172,14 @@ class Game {
     for (const p of hurt) { this.lives[p]--; if (hitBy[p].has(1 - p)) { this.kills[1 - p]++; credit.push(1 - p); } }
     this.t++;
     this.done = Math.min(...this.lives) <= 0 || this.t >= R.maxSteps;
-    const deadAt = hurt.map(p => this.pos[p].slice());
     if (hurt.length && !this.done) this.resetRound();
     this.lastBlast = blast;
-    return { hurt, credit, deadAt };
+    return { hurt, credit };
   }
   winner() { return this.lives[0] === this.lives[1] ? null : (this.lives[0] > this.lives[1] ? 0 : 1); }
 }
 
-// ---------- bots: mirror examples/{random,simple,greedy}/policy.py ----------
+// ---------- bots: mirror agents/{random,simple}/policy.py and ta_bots/greedy/policy.py ----------
 const pick = xs => xs[Math.floor(Math.random() * xs.length)];
 function dangerOf(g) { const s = new Set(); for (const k of g.bombs.keys()) for (const x of g.blastCells(Math.floor(k / g.N), k % g.N)) s.add(x); return s; }
 function bfs(g, start, blocked) {
@@ -280,7 +275,7 @@ function keysHelp() {
 }
 function readRules() {
   const num = (id, lo, hi, dflt) => Math.min(hi, Math.max(lo, parseInt($(id).value, 10) || dflt));
-  R = { layout: $("map").value, fuse: num("fuse", 1, 12, 6), radius: num("rad", 0, 8, 2), maxBombs: num("mb", 1, 5, 2), lives: num("lives", 1, 9, 3), maxSteps: num("maxt", 20, 2000, 300) };
+  R = { fuse: num("fuse", 1, 12, 6), radius: num("rad", 0, 8, 2), maxBombs: num("mb", 1, 5, 2), lives: num("lives", 1, 9, 3), maxSteps: num("maxt", 20, 2000, 300) };
 }
 function reset() {
   stop(); readRules(); g = new Game(); pending = [0, 0];
@@ -314,7 +309,7 @@ function tick() {
 
 $("start").onclick = () => timer ? stop() : start();
 $("reset").onclick = reset;
-["pa", "pb", "map", "fuse", "rad", "mb", "lives", "maxt"].forEach(id => $(id).addEventListener("change", reset));
+["pa", "pb", "fuse", "rad", "mb", "lives", "maxt"].forEach(id => $(id).addEventListener("change", reset));
 $("spd").addEventListener("change", () => { if (timer) { stop(); start(); } });
 
 const KEYS_A = { w: 1, s: 2, a: 3, d: 4, " ": 5 };

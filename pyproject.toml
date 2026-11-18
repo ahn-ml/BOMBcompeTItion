@@ -1,7 +1,7 @@
 [project]
 name = "bombcompetition"
 version = "0.1.0"
-description = "A 1v1 bomb game (Nubzuki vs the KAIST goose) for an RL lab"
+description = "A 1v1 bomb game for a reinforcement learning class competition"
 requires-python = ">=3.10"
 dependencies = ["numpy", "gymnasium", "pillow"]
 

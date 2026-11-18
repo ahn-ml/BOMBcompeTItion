@@ -1,4 +1,4 @@
-"""Rule-based bot (TA reference, stronger than the student examples):
+"""TA reference bot (keep out of the student release; stronger than agents/simple):
 1. standing in a bomb's range: walk to the closest safe cell;
 2. opponent in my blast range and I can still get away: drop a bomb;
 3. otherwise walk toward the opponent without stepping into danger.
@@ -31,12 +31,10 @@ class Policy:
     def __init__(self):
         self.rng = np.random.default_rng()
 
-    def act(self, obs: np.ndarray) -> int:
+    def act(self, obs):
         view = parse(obs)
         bombs = set(view.bombs)
-        danger = set()
-        for bomb in bombs:
-            danger |= blast_cells(view.walls, bomb, RULES.radius)
+        danger = set().union(*(blast_cells(view.walls, b, RULES.radius) for b in bombs))
         paths = shortest_paths(view.walls, view.me, bombs | {view.opp})
 
         if view.me in danger:
