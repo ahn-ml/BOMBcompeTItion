@@ -156,8 +156,8 @@ python run_match.py --p1 submission --p2 examples/simple --games 20
 `--p1` plays A and `--p2` plays B; any bot folder works for either. Swap them to test the other side.
 
 ```
-p1 submission: 0W 13D 7L  kills 0  deaths 32  faults 0  slowest act 0 ms
-p2 examples/simple: 7W 13D 0L  kills 32  deaths 25  faults 0  slowest act 0 ms
+p1 submission: 0W 20D 0L  kills 0  deaths 31  faults 0  slowest act 0 ms
+p2 examples/simple: 0W 20D 0L  kills 31  deaths 31  faults 0  slowest act 0 ms
 ```
 
 Add `--replay replay.json` to save one game, then open `web/replay.html` in a browser and load the file.

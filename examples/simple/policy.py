@@ -3,7 +3,7 @@ It is deliberately simple and plays badly."""
 
 import random
 
-from bombcompetition import Action
+from bombcompetition import RULES, Action
 
 
 class Policy:
@@ -21,9 +21,10 @@ class Policy:
         # Which bombs on the board are mine? bomb["owner"] is the player who dropped it (0 = A, 1 = B).
         my_bombs = [bomb for bomb in obs["bombs"] if bomb["owner"] == obs["player"]]
 
-        # If the opponent is close and I have no bomb out, drop one.
+        # If the opponent is within blast range and I may drop another bomb, drop one.
+        # RULES holds the game settings: fuse, radius, max_bombs, lives, max_steps.
         distance = abs(my_row - opp_row) + abs(my_col - opp_col)
-        if distance <= 2 and len(my_bombs) == 0:
+        if distance <= RULES.radius and len(my_bombs) < RULES.max_bombs:
             return Action.BOMB
 
         # Otherwise check the four neighbouring cells and keep the ones I can walk into.
