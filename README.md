@@ -35,8 +35,8 @@ class Policy:
 Write it in `submission/policy.py` and test it against the examples:
 
 ```bash
-python run_match.py submission examples/random --games 20
-python run_match.py submission examples/random --gif replay.gif
+python run_match.py submission examples/simple --games 20
+python run_match.py submission examples/simple --gif replay.gif
 ```
 
 `run_match.py` uses the league's limits: a slow step, an exception or an invalid action is reported
@@ -76,7 +76,7 @@ against TA bots. See `league.py`.
 ```
 bombcompetition/   game.py (rules, Game, observations), env.py, render.py, match.py
 submission/        your bot (what you hand in)
-examples/random/   example bot: obs → grid / tensor, then a random move (no strategy)
+examples/simple/   example bot: reads obs and acts (deliberately simple)
 run_match.py       play two bots
 league.py          the league
 web/               browser version (python tools/build_web.py rebuilds play.html)
