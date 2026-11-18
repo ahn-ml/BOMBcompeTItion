@@ -5,3 +5,6 @@ __pycache__/
 league_results.csv
 *.egg-info/
 .hub/
+CLAUDE.md
+.claude/
+docs/agent/

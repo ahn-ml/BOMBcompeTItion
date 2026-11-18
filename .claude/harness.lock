@@ -1,9 +1,0 @@
-{
- "template": "/data/tgkang/projects/templates",
- "commit": "8e2a798",
- "kind": "project",
- "at": "2026-11-18 15:44",
- "files": {
-  "docs/agent/hub.md": "d926b650ef3db3de686991f6e1dc0413240d9b9f5cbb32ee8bda109ab549b328"
- }
-}
