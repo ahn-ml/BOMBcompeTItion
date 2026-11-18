@@ -62,7 +62,7 @@ def test_observation():
         g.step(a0, a1)
     obs = g.obs(B)
     assert (obs["player"], obs["me"], obs["opp"], obs["lives"], obs["step"]) == (B, (6, 7), (3, 1), (3, 3), 3)
-    assert {(b["pos"], b["owner"], b["fuse"]) for b in obs["bombs"]} == {((1, 1), A, 3), ((6, 7), B, 4)}
+    assert {(b["pos"], b["owner"], b["fuse"]) for b in obs["bombs"]} == {((1, 1), A, 2), ((6, 7), B, 3)}
     assert legal_actions(obs) == [Action.STAY, Action.BOMB, Action.UP, Action.DOWN]
 
 
@@ -86,7 +86,7 @@ def test_env():
 def test_recorded_games_replay_identically():
     traces = json.loads((Path(__file__).parent / "game_traces.json").read_text())
     for trace in traces:
-        g = Game(Rules(layout={"rooms": MAP, "pillar": PILLAR}[trace["layout"]]))
+        g = Game(Rules(layout={"rooms": MAP, "pillar": PILLAR}[trace["layout"]], fuse=6, max_bombs=2))  # recorded with the old rules
         for (a0, a1), expected in zip(trace["acts"], trace["states"]):
             g.step(a0, a1)
             assert [*g.pos[0], *g.pos[1], *g.lives, *g.kills, len(g.bombs)] == expected

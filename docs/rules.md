@@ -29,7 +29,7 @@ An action that is not possible does nothing.
 Both players act at the same time. A step is resolved in this order:
 
 1. **Bombs are dropped.** A player who chose BOMB drops a bomb on its cell, unless there is already a
-   bomb there or the player already has 2 bombs on the board.
+   bomb there or the player already has 3 bombs on the board.
 2. **Players move.** A move fails if the target cell is a wall, has a bomb, or is where the other player
    stands at the start of the step. If both players move into the same cell, neither moves. You can
    stand on a bomb you just dropped, but you cannot step back onto a bomb's cell once you leave it.
@@ -43,9 +43,9 @@ Both players act at the same time. A step is resolved in this order:
 
 ## Bomb timing
 
-A bomb starts with fuse 6, and the fuse already goes down in the step it is dropped. So right after
-you drop a bomb the observation shows `fuse = 5`, and you can make 5 more moves before it explodes at
-the end of the 5th step. In general, a bomb with `fuse = f` explodes at the end of the `f`-th step from now.
+A bomb starts with fuse 5, and the fuse already goes down in the step it is dropped. So right after
+you drop a bomb the observation shows `fuse = 4`, and you can make 4 more moves before it explodes at
+the end of the 4th step. In general, a bomb with `fuse = f` explodes at the end of the `f`-th step from now.
 
 ## Lives, kills and the end of a game
 
@@ -60,5 +60,5 @@ the end of the 5th step. In general, a bomb with `fuse = f` explodes at the end 
 All numbers above come from `bombcompetition.RULES`:
 
 ```python
-Rules(layout=MAP, starts=None, fuse=6, radius=2, max_bombs=2, lives=3, max_steps=300)
+Rules(layout=MAP, starts=None, fuse=5, radius=2, max_bombs=3, lives=3, max_steps=300)
 ```

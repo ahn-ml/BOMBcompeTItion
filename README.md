@@ -119,7 +119,7 @@ def my_reward(prev_obs, action, obs, deaths):     # called after every step
     reward = sum((d.killer == me) - (d.player == me) for d in deaths)   # the default reward
     return reward - 0.01                                                 # plus a small cost per step
 
-env = BomberEnv(opponent=opponent.act, reward_fn=my_reward, rules=Rules(max_bombs=3, lives=5))
+env = BomberEnv(opponent=opponent.act, reward_fn=my_reward, rules=Rules(max_bombs=2, lives=5))
 ```
 
 `Rules` values you leave out keep the defaults in `RULES`. `run_match.py` and the league always use
@@ -155,8 +155,8 @@ python run_match.py --p1 submission --p2 examples/simple --games 20
 `--p1` plays A and `--p2` plays B; any bot folder works for either. Swap them to test the other side.
 
 ```
-p1 submission: 0W 12D 8L  kills 0  deaths 36  faults 0  slowest act 0 ms
-p2 examples/simple: 8W 12D 0L  kills 36  deaths 27  faults 0  slowest act 0 ms
+p1 submission: 0W 13D 7L  kills 0  deaths 32  faults 0  slowest act 0 ms
+p2 examples/simple: 7W 13D 0L  kills 32  deaths 25  faults 0  slowest act 0 ms
 ```
 
 Add `--replay replay.json` to save one game, then open `web/replay.html` in a browser and load the file.
@@ -186,7 +186,7 @@ teams, together with results against TA bots (TBD). The league runs with `league
 
 ## Open questions (TAs, remove before release)
 
-1. Game rules: map, number of bombs (2 or 3), fuse, blast radius, lives, game length.
+1. Game rules: map, number of bombs, fuse, blast radius, lives, game length.
 2. Winning condition: careful bots that only dodge almost never get killed, so games between good bots
    end in draws. How to discourage pure defence: rank by total kills, add results against TA bots, change rules?
 3. Submission format and Python environment: allowed libraries and versions (torch?), time limit per `act`,

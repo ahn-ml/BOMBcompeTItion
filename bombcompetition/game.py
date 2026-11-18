@@ -47,9 +47,9 @@ MOVES = (Action.UP, Action.DOWN, Action.LEFT, Action.RIGHT)
 class Rules:
     layout: tuple[str, ...] = MAP  # '#' wall, '.' floor, 'A'/'B' start cells; border must be walls
     starts: tuple[Cell, Cell] | None = None  # overrides the 'A'/'B' cells
-    fuse: int = 6  # steps from dropping a bomb to its explosion
+    fuse: int = 5  # steps from dropping a bomb to its explosion
     radius: int = 2  # explosion reach in each direction
-    max_bombs: int = 2  # bombs per player on the board at once
+    max_bombs: int = 3  # bombs per player on the board at once
     lives: int = 3
     max_steps: int = 300
 
