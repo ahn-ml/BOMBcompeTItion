@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BOMBcompeTItion replay</title>
+<style>
+  body { margin: 0; padding: 20px; background: #15181d; color: #ddd; font: 14px/1.5 system-ui, sans-serif; }
+  main { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+  canvas { width: 100%; aspect-ratio: 1; image-rendering: pixelated; background: #000; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  #status { font-family: ui-monospace, monospace; }
+  input[type=range] { flex: 1; }
+  button { padding: 4px 10px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="row"><input id="file" type="file" accept=".json"> <span>a replay saved with <code>run_match.py --replay</code></span></div>
+  <canvas id="board" width="576" height="576"></canvas>
+  <div class="row">
+    <button id="prev">&lt;</button><button id="play">Play</button><button id="next">&gt;</button>
+    <input id="slider" type="range" min="0" value="0">
+  </div>
+  <div id="status">Load a replay file.</div>
+</main>
+<script>
+const SPRITES = {"blast": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAABbklEQVQ4jY1TPW+CUBQ9z/jRjTg11oTQmHQQpy7GxQ0H8W908jcw8Rvs0r8hDrJ1IS5M4kDSSEiscSIsjcDwOjTv8Z5o45m4l3vO/Xj3EvyDpdanoj2LduQypuIQibqaSf4gblVEJGM/7tEgbnFid3Dk/w7bzlWRukgWxZ7ezqBol/boDOIlCGIN+3GPPn9+EUkgiFsAAMNOAQDN1xepfMc8AVCgqxmP5S0stT7V1QzdwRHrlQYAMJ1HSaBYbEBHbbhWKTKLdqTGAhh5Mo1g2ClyP5QEGvMhiJdUZlNj2e9BYz7k37qaYan1aU0MMOyUt3A5AwDI/RCGnYKOyuHWxQDiJTDs6+Rb4BWwd3YtBbkfwjFPKBYbFIsNHPOE3A/hWgqIl+D746FMCsgrO5lGvETXUnhrrELWIvC32nyj9uMeZdNlr3ELzfcfzpOGeNh2sF5plRtgWQ/bDm9VakGsQrwFBtHHVviqAMM9Z8zwCyP4oC36gqlWAAAAAElFTkSuQmCC", "bomb_a": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAABE0lEQVQ4jY1TMU7EMBCcnK5Ni7QdcGjzANLQnEQViSYNLQU0KVAqdK9AV/EASiqqRKKiofcHIuA6PpAHLM15L7b3OEZy4fXMeLy2M9iQPfXsYAGAnD1/m+rP29NEM7eI8/efPQH+DwEg5xeXcnV9J35uEWeWkJkT4raWGE3PI8yMPM8BAOM4YhgGFRv1DIh64ElEBCJCnKTrOpRlGdR8At2diKyjBiZFUWiKuAcHESeYAZB2tf5T1Pe9Do+tRjRBVTd4eX0zxZvlQodzDlXd6Lr2wKdo728CAz4+wma50PnJxxfa1RpPjw8AkCXXWNVNYGIZTDdPDIDddXo453aGzME7iD+TeJIF/7CmOus3qpGBhP8LkwxgQAx8eA8AAAAASUVORK5CYII=", "bomb_b": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAABFklEQVQ4jY1ToU4EMRB9e8Eg1pKMg1wy+wGswVyC2gSzBovBbAhZRc7wARhyCsEnoFC7CZ5g+wObkDPwBSuQg7nObds5jpdUdPre6+u0zWBDdtSzvQUA8vPwbKoP728SzYFF/P742hHg/xAAcnp2LheX1+LnFnFmCZk5IW5qidH0PMLMyPMcADCOI4ZhULFRz4CoB55ERCAixEm6rkNZlkHNJ9Ddicg6amBSFIWmiHuwF3GCGQBpl6s/RX3f6/DYaEQTVHWDl9c3U7xezHU451DVja5rD3yK9vYqMODjI6wXc52fvH+iXa7w9HgHAFlyjVXdBCaWwXTzxADYXqeHc25ryBy8g/gziSdZ8A9rqrN+oxoZSPi/vLRhJna+vskAAAAASUVORK5CYII=", "floor_1": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAABmJLR0QA/wD/AP+gvaeTAAAARUlEQVQokWNkYBBgIAUwkaR60Gj4QKKGTYeJ1/CBYdPmWWqaDJs2w+1hJBysmzYz+PnCeURoYPiArIYYDShgcMTDYNcAAP/ZC1XTuCS6AAAAAElFTkSuQmCC", "floor_2": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAABmJLR0QA/wD/AP+gvaeTAAAAVElEQVQokWNkYBBgIAUwkaR6VMPAaVDkUiNNQ4nrJWQuMwMDBx6zW72eykTx2P7+dv2x1offbxkYGBgJpqWp/j+yNyIMxWcDBMDNhgDCNqABkoMVAPifE2mxi63yAAAAAElFTkSuQmCC", "floor_3": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAABmJLR0QA/wD/AP+gvaeTAAAAKElEQVQokWNkYBBgIAUwkaSadhpa7sCZjIPZDxtXshCjYVD7YQRpAAAhmwMMiLz68QAAAABJRU5ErkJggg==", "floor_4": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAABmJLR0QA/wD/AP+gvaeTAAAASUlEQVQokWNkYBBgIAUwkaR6VMOAauBm2ESahhRNFWI1cDNsyte8Zhv/PF/zGsQeRmLSUr7mtYnXtUhw0pzrd+BsomxABiQHKwCQZQzkoDWlLgAAAABJRU5ErkJggg==", "floor_5": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAABmJLR0QA/wD/AP+gvaeTAAAAPUlEQVQokWNkYBBgIAUwEamOm2ETCRq4GTalaKpA9DAS6SRuhk1fGfxI0AAHxPphaGgQ2i5KjIYRHkpEAgD3MAYjBefd3AAAAABJRU5ErkJggg==", "player_a": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA70lEQVR4nKWTMQ6CQBBFP4RLWJFgD97BikLvYOIlCLXhEHIJbaiwNhQE6CXZRo6xFmY2w+yiJk6zsP+/2ZkdAP4MT27EUaKXzMPYW/5AgodLZ8TbfZq7i1TLRB7BBFqQI1SRmiQ+F36BASDMKlOxR6cTfD2uAAD70k4mNVWk7woknKw35lnCUpu1QIalcGkBf9mXE/pH52zB0poWAJtCmFWLJ1vRtFB1jmHsPTNPutVwe/rIqjoH4P6oEEeJjqNE785PrbV2ruQhxucwb4PuQK7A/DuYTUEV6df2pc9MgXri5XEjr876F3jwBNy4tP8ChHKPDePwWoAAAAAASUVORK5CYII=", "player_b": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAwklEQVR4nGNgoBAwogvoKen/R+ZfuncRQw1OoKek/x8doBtIUDOphrDAJM96vmP4kyPHcPHuI6JdzMDAwMAE0wwD+soGKAr0lQ0Ih4Oekv5/GEb2DjFhwMLAQGJIYzMAH7h49wKDvrIB8VGLLRawxQpWr+HTfPzOhf/H71zAMIiJGH+euHuRgYGBgcFCWR9DDsMAmGJkYKGsj6EZpg5rXpi5ayFBV6W7xRMOzN/ZsihpA5mP0wswxcipExmc9XyHkmMBX3HJEvMUW4wAAAAASUVORK5CYII=", "wall": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAABJklEQVQ4jWNkYGBg0FPSf8tAIrh076IwAwMDA6Oekv5bDi4uodT6SgYGBgaG2Y3tDDA2PjC7sZ0hvbpCmomBgQFFg5CcHUNKiC9BA1LrKxkm1dRfZYEJwDStnX+UYc6azQQNmbNmMwPcCwwMDEJSGh4MDAwMDM9u7GBAZjMwMMD5MAATZ2Rk/MDCwMDAkNvZjCRtDWdNLt8BZwcnWmOomVJRx8CE7Hx0kNvZzCCl4YGmGRUw4ZRBAvjCgygD8AG4AdhswWczXE5PSf/t7NWb/mMDs1dv+q+npI9TTl/Z4D08HXh6V+C0bc6azQxr5x/F7wVyAcUGsFy6d1F4dmP7fyE5O5I0BidaMzD9sdJmZGBgYJi7fKPUpJr6q6QYkNfSqP345vkXAImqgSDDtlJwAAAAAElFTkSuQmCC"};
+const PRELOAD = null;
+const ACTIONS = ["STAY", "UP", "DOWN", "LEFT", "RIGHT", "BOMB"];
+const $ = id => document.getElementById(id);
+const ctx = $("board").getContext("2d");
+const img = {};
+let replay = null, i = 0, timer = null;
+
+function draw() {
+  const f = replay.frames[i], n = replay.layout.length, t = $("board").width / n;
+  const put = (name, [r, c]) => ctx.drawImage(img[name], c * t, r * t, t, t);
+  ctx.imageSmoothingEnabled = false;
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+    put(`floor_${(r * 7 + c * 3) % 5 + 1}`, [r, c]);
+    if (replay.layout[r][c] === "#") put("wall", [r, c]);
+  }
+  for (const cell of f.blast) put("blast", cell);
+  ctx.font = `bold ${t / 3}px sans-serif`; ctx.fillStyle = "#fff"; ctx.textAlign = "right"; ctx.textBaseline = "top";
+  for (const [r, c, owner, fuse] of f.bombs) { put(owner ? "bomb_b" : "bomb_a", [r, c]); ctx.fillText(fuse, c * t + t - 3, r * t + 2); }
+  f.pos.forEach((p, k) => put(k ? "player_b" : "player_a", p));
+
+  const acts = f.actions ? `A ${ACTIONS[f.actions[0]]}, B ${ACTIONS[f.actions[1]]}` : "-";
+  const hits = f.deaths.map(([p, k]) => k === null ? `${"AB"[p]} hit by own bomb` : `${"AB"[k]} hit ${"AB"[p]}`).join(", ");
+  $("status").innerHTML =
+    `A: ${replay.players[0]}  vs  B: ${replay.players[1]}<br>` +
+    `step ${f.step}/${replay.frames.at(-1).step}  actions: ${acts}<br>` +
+    `lives ${f.lives[0]}:${f.lives[1]}  kills ${f.kills[0]}:${f.kills[1]}  ${hits}`;
+  $("slider").value = i;
+}
+function go(k) { i = Math.max(0, Math.min(replay.frames.length - 1, k)); draw(); }
+function pause() { clearInterval(timer); timer = null; $("play").textContent = "Play"; }
+function load(data) {
+  pause(); replay = data; $("slider").max = data.frames.length - 1; go(0);
+}
+$("file").onchange = async e => e.target.files[0] && load(JSON.parse(await e.target.files[0].text()));
+$("prev").onclick = () => { pause(); go(i - 1); };
+$("next").onclick = () => { pause(); go(i + 1); };
+$("slider").oninput = e => { pause(); go(+e.target.value); };
+$("play").onclick = () => {
+  if (!replay) return;
+  if (timer) return pause();
+  if (i === replay.frames.length - 1) go(0);
+  $("play").textContent = "Pause";
+  timer = setInterval(() => i < replay.frames.length - 1 ? go(i + 1) : pause(), 200);
+};
+document.onkeydown = e => {
+  if (!replay) return;
+  if (e.key === "ArrowLeft") { pause(); go(i - 1); }
+  if (e.key === "ArrowRight") { pause(); go(i + 1); }
+  if (e.key === " ") { e.preventDefault(); $("play").click(); }
+};
+Promise.all(Object.entries(SPRITES).map(([k, src]) => new Promise(res => { img[k] = new Image(); img[k].onload = res; img[k].src = src; })))
+  .then(() => PRELOAD && load(PRELOAD));
+</script>
+</body>
+</html>

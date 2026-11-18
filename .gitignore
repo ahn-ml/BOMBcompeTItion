@@ -8,3 +8,4 @@ league_results.csv
 CLAUDE.md
 .claude/
 docs/agent/
+replay*.json

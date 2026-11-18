@@ -8,7 +8,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-from bombcompetition import Game, blast_cells, load_policy
+from bombcompetition import DELTAS, Action, Game, blast_cells, legal_actions
 from bombcompetition.game import Bomb
 from bombcompetition.render import save_gif, to_rgb
 
@@ -39,12 +39,34 @@ game.t = 37
 game.last_blast = blast_cells(game.walls, (5, 1), game.rules.radius)  # a bomb at (5, 1) just exploded
 board_with_coordinates(game).save(OUT / "board.png")
 
-random.seed(1)
-bot = load_policy(ROOT / "examples" / "simple")
-a, b, game = bot(), bot(), Game()
-frames = [to_rgb(game, TILE)]
-while not game.done and len(frames) < 120:
-    game.step(a.act(game.obs(0)), b.act(game.obs(1)))
+
+
+def busy_bot(obs):
+    """Drops bombs often and steps out of blast ranges: only for a lively demo GIF."""
+    mine = [b for b in obs["bombs"] if b["owner"] == obs["player"]]
+    if len(mine) < 2 and random.random() < 0.35:
+        return Action.BOMB
+    danger = set()
+    for bomb in obs["bombs"]:
+        danger |= blast_cells(obs["walls"], bomb["pos"], 2)
+    moves = [a for a in legal_actions(obs) if a != Action.BOMB]
+    r, c = obs["me"]
+    safe = [a for a in moves if (r + DELTAS[a][0], c + DELTAS[a][1]) not in danger]
+    return random.choice(safe or moves)
+
+
+def demo_game(seed, length=100):
+    random.seed(seed)
+    game, frames, explosions, kills = Game(), [], 0, 0
     frames.append(to_rgb(game, TILE))
+    while not game.done and len(frames) < length:
+        deaths = game.step(busy_bot(game.obs(0)), busy_bot(game.obs(1)))
+        explosions += bool(game.last_blast)
+        kills += sum(d.killer is not None for d in deaths)
+        frames.append(to_rgb(game, TILE))
+    return frames, explosions + 5 * kills
+
+
+frames = max((demo_game(seed) for seed in range(100)), key=lambda x: (len(x[0]) == 101, x[1]))[0]
 save_gif(frames, OUT / "match.gif", fps=5)
 print("wrote images/board.png, images/match.gif")

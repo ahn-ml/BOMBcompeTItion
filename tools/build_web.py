@@ -1,9 +1,6 @@
-"""Build web/play.html from web/template.html by inlining the sprites.
+"""Build web/replay.html (the replay viewer) from web/template.html by inlining the sprites.
 
     python tools/build_web.py
-
-The browser game re-implements the rules in JavaScript; keep it in sync with
-bombcompetition/game.py (tests/game_traces.json can be replayed against it).
 """
 
 import base64
@@ -19,5 +16,5 @@ sprites = {
 }
 template = (ROOT / "web" / "template.html").read_text()
 assert "/*SPRITES*/" in template
-(ROOT / "web" / "play.html").write_text(template.replace("/*SPRITES*/", json.dumps(sprites)))
-print("wrote web/play.html")
+(ROOT / "web" / "replay.html").write_text(template.replace("/*SPRITES*/", json.dumps(sprites)).replace("/*REPLAY*/", ""))
+print("wrote web/replay.html")

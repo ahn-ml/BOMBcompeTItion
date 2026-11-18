@@ -106,6 +106,7 @@ class Game:
         self.pos: list[Cell] = list(self.starts)
         self.bombs: dict[Cell, Bomb] = {}
         self.last_blast: set[Cell] = set()  # cells that exploded in the last step
+        self.last_pos: list[Cell] = list(self.pos)  # positions at the end of the last step, before a new round
 
     def step(self, a0: int, a1: int) -> list[Death]:
         """Play one step and return who died in it."""
@@ -131,9 +132,10 @@ class Game:
 
         self.t += 1
         self.done = min(self.lives) <= 0 or self.t >= self.rules.max_steps
+        hit_pos = list(self.pos)
         if deaths and not self.done:
             self._new_round()
-        self.last_blast = blast
+        self.last_blast, self.last_pos = blast, hit_pos
         return deaths
 
     def _target(self, p: int, a: Action) -> Cell:

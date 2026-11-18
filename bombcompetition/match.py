@@ -1,6 +1,7 @@
 """Loading bots and playing games between them."""
 
 import importlib.util
+import json
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -8,8 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .game import RULES, Action, Game, Rules
-from .render import save_gif, to_rgb
+from .game import RULES, Action, Death, Game, Rules
 
 def load_policy(folder: str | Path) -> type:
     """The Policy class from <folder>/policy.py."""
@@ -20,17 +20,39 @@ def load_policy(folder: str | Path) -> type:
     return module.Policy
 
 
-def play_match(act0: Callable[[np.ndarray], int], act1: Callable[[np.ndarray], int],
-               rules: Rules = RULES, gif: str | Path | None = None) -> Game:
-    """Play one game, act0 as A and act1 as B, and return the finished game (optionally saved as a GIF)."""
+def _frame(game: Game, actions=None, deaths: list[Death] = ()) -> dict:
+    """One step of a replay: the board after the step, the actions that led to it, and who died."""
+    return {
+        "step": game.t,
+        "pos": [list(p) for p in game.last_pos],  # where the players were (even if they were just hit)
+        "bombs": [[*cell, b.owner, b.fuse] for cell, b in game.bombs.items()],
+        "blast": [list(cell) for cell in game.last_blast],
+        "lives": list(game.lives),
+        "kills": list(game.kills),
+        "actions": [int(a) for a in actions] if actions else None,
+        "deaths": [[d.player, d.killer] for d in deaths],
+    }
+
+
+def play_match(act0: Callable, act1: Callable, rules: Rules = RULES,
+               replay: str | Path | None = None, names: tuple[str, str] = ("A", "B")) -> Game:
+    """Play one game, act0 as A and act1 as B, and return the finished game.
+    With `replay`, also save the game as a JSON replay (open it in web/replay.html)."""
     game = Game(rules)
-    frames = [to_rgb(game)] if gif else []
+    frames = [_frame(game)]
     while not game.done:
-        game.step(act0(game.obs(0)), act1(game.obs(1)))
-        if gif:
-            frames.append(to_rgb(game))
-    if gif:
-        save_gif(frames, gif)
+        actions = (act0(game.obs(0)), act1(game.obs(1)))
+        deaths = game.step(*actions)
+        if replay:
+            frames.append(_frame(game, actions, deaths))
+    if replay:
+        r = rules
+        Path(replay).write_text(json.dumps({
+            "players": list(names),
+            "rules": {"fuse": r.fuse, "radius": r.radius, "max_bombs": r.max_bombs, "lives": r.lives, "max_steps": r.max_steps},
+            "layout": list(r.layout),
+            "frames": frames,
+        }))
     return game
 
 
