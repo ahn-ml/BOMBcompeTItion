@@ -35,7 +35,7 @@ pip install -e .        # Python >= 3.10; installs numpy, gymnasium, pillow
 4. **Test it** against the example bot:
 
 ```bash
-python run_match.py submission examples/simple --games 20
+python run_match.py --p1 submission --p2 examples/simple --games 20
 ```
 
 ## 2. Game rules
@@ -186,18 +186,19 @@ it often blows itself up. Start from it, or from the empty template in `submissi
 ## 4. Testing locally
 
 ```bash
-python run_match.py submission examples/simple --games 20
+python run_match.py --p1 submission --p2 examples/simple --games 20
 ```
 
-plays 20 games (sides swapped every game) under the same rules as the league and prints,
+plays 20 games with `--p1` as player A (top-left start) and `--p2` as player B, under the same rules
+as the league, and prints,
 for each bot, wins / draws / losses, kills, deaths, faults and its slowest `act` call, followed by the
 first fault messages if there were any.
 
 ```bash
-python run_match.py submission examples/simple --gif replay.gif
+python run_match.py --p1 submission --p2 examples/simple --gif replay.gif
 ```
 
-plays one game (your bot as A) and saves it as an animation. You can also try your own ideas by hand
+plays one game and saves it as an animation. Swap `--p1` and `--p2` to test your bot from the other side. You can also try your own ideas by hand
 in `web/play.html`.
 
 ## 5. What you may and may not do
@@ -239,7 +240,8 @@ cd submission && zip -r ../<team_name>.zip . && cd ..
 
 ## 8. Checklist before you submit
 
-- [ ] `python run_match.py submission examples/simple --games 20` runs and reports **0 faults**.
+- [ ] `python run_match.py --p1 submission --p2 examples/simple --games 20` runs and reports **0 faults**.
+- [ ] It also runs as player B: `python run_match.py --p1 examples/simple --p2 submission --games 20`.
 - [ ] The slowest `act` call is well within the time limit (**TBD**).
 - [ ] Everything your bot needs is inside `submission/` and loaded relative to `policy.py`.
 - [ ] Your bot uses only the allowed libraries.

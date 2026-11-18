@@ -80,11 +80,12 @@ class Record:
     errors: list[str] = field(default_factory=list)
 
 
-def play_series(bot_a: type, bot_b: type, games: int, rules: Rules = RULES) -> tuple[Record, Record]:
-    """Play `games` games between two Policy classes under the league limits, swapping sides each game."""
+def play_series(bot_a: type, bot_b: type, games: int, rules: Rules = RULES, swap: bool = True) -> tuple[Record, Record]:
+    """Play `games` games between two Policy classes. bot_a plays A, bot_b plays B;
+    with `swap`, they change sides every other game."""
     records = (Record(), Record())
     for i in range(games):
-        order = (0, 1) if i % 2 == 0 else (1, 0)  # order[side] = which bot plays that side
+        order = (1, 0) if swap and i % 2 else (0, 1)  # order[side] = which bot plays that side
         bots = [SafeBot((bot_a, bot_b)[order[side]]) for side in (0, 1)]
         game = Game(rules)
         while not game.done:
