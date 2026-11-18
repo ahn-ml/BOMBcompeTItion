@@ -1,4 +1,4 @@
-"""TA reference bot (keep out of the student release; stronger than agents/simple):
+"""TA reference bot (keep out of the student release; stronger than examples/simple):
 1. standing in a bomb's range: walk to the closest safe cell;
 2. opponent in my blast range and I can still get away: drop a bomb;
 3. otherwise walk toward the opponent without stepping into danger.

@@ -1,7 +1,5 @@
-"""Template: copy this folder to agents/<your_team> and write `act`.
-
-The folder is your submission (policy.py plus any files it loads, e.g. weights via
-Path(__file__).parent / "weights.npz"). Policy() gets 10 s per game, act() 100 ms per step;
+"""Your bot. This folder is your submission: policy.py plus any files it loads
+(e.g. weights via Path(__file__).parent / "weights.npz"). Policy() gets 10 s per game, act() 100 ms per step;
 being too slow, raising, or returning something other than 0-5 means you STAY that step.
 """
 

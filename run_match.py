@@ -1,7 +1,7 @@
 """Play two bots against each other under the league rules and time limits.
 
-    python run_match.py agents/my_team agents/simple --games 20
-    python run_match.py agents/my_team agents/simple --gif match.gif
+    python run_match.py submission examples/simple --games 20
+    python run_match.py submission examples/simple --gif replay.gif
 
 A bot is a folder with policy.py. No faults here means it is a valid submission.
 """

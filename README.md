@@ -32,16 +32,16 @@ class Policy:
     def act(self, obs): ...      # every step, 100 ms limit, returns 0-5
 ```
 
-Start from `agents/my_team` and test against the examples:
+Write it in `submission/policy.py` and test it against the examples:
 
 ```bash
-cp -r agents/my_team agents/<team>
-python run_match.py agents/<team> agents/simple --games 20
-python run_match.py agents/<team> agents/simple --gif match.gif
+python run_match.py submission examples/simple --games 20
+python run_match.py submission examples/simple --gif replay.gif
 ```
 
 `run_match.py` uses the league's limits: a slow step, an exception or an invalid action is reported
-as a fault (and counts as STAY). Submit the folder once it plays without faults.
+as a fault (and counts as STAY). Once it plays without faults, zip the `submission/` folder
+(with `policy.py` at the top) as `<team>.zip` and hand it in.
 
 ## Observation
 
@@ -74,7 +74,8 @@ against TA bots. See `league.py`.
 
 ```
 bombcompetition/   game.py (rules, Game), view.py (parse, to_game), env.py, render.py, match.py
-agents/            my_team (template), random, simple
+submission/        your bot (what you hand in)
+examples/          random, simple
 run_match.py       play two bots
 league.py          the league
 web/               browser version (python tools/build_web.py rebuilds play.html)
