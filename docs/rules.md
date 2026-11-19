@@ -7,7 +7,7 @@
 - A fixed 9x9 map. Cells are `(row, col)`: row 0 is the top, col 0 is the left.
 - Grey blocks are walls. They never change, block movement and stop explosions. The border is all walls.
 - Player A starts at `(1, 1)`, player B at `(7, 7)`. The map looks the same after a 180° rotation,
-  so neither side has an advantage.
+  so neither side has an advantage. Each bot sees the board from its own side (B's view is turned 180°).
 - In the picture: A is at `(3, 3)`, B at `(5, 5)`. The number on a bomb is the steps left until it
   explodes. The fire shows the cells hit by a bomb that exploded at `(5, 1)` in this step.
 

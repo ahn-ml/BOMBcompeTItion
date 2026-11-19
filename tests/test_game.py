@@ -1,11 +1,12 @@
 import json
+import random
 from pathlib import Path
 
 import pytest
 from gymnasium.utils.env_checker import check_env
 
 from bombcompetition import MAP, Action, BomberEnv, Game, Rules, legal_actions
-from bombcompetition.game import Bomb
+from bombcompetition.game import TURN, Bomb
 
 A, B = 0, 1
 S = Action.STAY
@@ -34,7 +35,7 @@ def test_kill_credit_when_both_die():
 def test_same_target_cell_blocks_both():
     g = Game()
     g.pos = [(4, 1), (4, 3)]
-    g.step(Action.RIGHT, Action.LEFT)
+    g.step(Action.RIGHT, Action.RIGHT)  # B moves RIGHT in its own view, LEFT on the board
     assert g.pos == [(4, 1), (4, 3)]
 
 
@@ -58,12 +59,31 @@ def test_bad_rules(rules):
 
 def test_observation():
     g = Game()
-    for a0, a1 in [(Action.BOMB, Action.UP), (Action.DOWN, Action.BOMB), (Action.DOWN, Action.LEFT)]:
-        g.step(a0, a1)
-    obs = g.obs(B)
-    assert (obs["player"], obs["me"], obs["opp"], obs["lives"], obs["step"]) == (B, (6, 7), (3, 1), (3, 3), 3)
-    assert {(b["pos"], b["owner"], b["fuse"]) for b in obs["bombs"]} == {((1, 1), A, 2), ((6, 7), B, 3)}
+    for a0, a1 in [(Action.BOMB, Action.DOWN), (Action.DOWN, Action.BOMB), (Action.DOWN, Action.RIGHT)]:
+        g.step(a0, a1)  # B's actions are in B's view: on the board B went UP, then LEFT
+    assert g.pos == [(3, 1), (6, 7)]
+    obs = g.obs(B)  # B's view is the board turned 180°
+    assert (obs["player"], obs["me"], obs["opp"], obs["lives"], obs["step"]) == (B, (2, 1), (5, 7), (3, 3), 3)
+    assert {(b["pos"], b["owner"], b["fuse"]) for b in obs["bombs"]} == {((7, 7), A, 2), ((2, 1), B, 3)}
     assert legal_actions(obs) == [Action.STAY, Action.BOMB, Action.UP, Action.DOWN]
+
+
+def test_both_sides_see_the_same_game():
+    """Swapping the bots gives the same game from each bot's side."""
+    rng = random.Random(0)
+    for _ in range(200):
+        x, y = Game(), Game()
+        while not x.done:
+            a0, a1 = rng.randrange(6), rng.randrange(6)
+            x.step(a0, a1)
+            y.step(a1, a0)
+            for p in (A, B):
+                ox, oy = x.obs(p), y.obs(1 - p)
+                assert (ox["me"], ox["opp"], ox["lives"]) == (oy["me"], oy["opp"], oy["lives"])
+                assert (ox["walls"] == oy["walls"]).all()
+                mine = lambda o: {(b["pos"], b["owner"] == o["player"], b["fuse"]) for b in o["bombs"]}
+                assert mine(ox) == mine(oy)
+            assert x.kills == y.kills[::-1] and x.done == y.done
 
 
 def test_custom_reward():
@@ -88,6 +108,6 @@ def test_recorded_games_replay_identically():
     for trace in traces:
         g = Game(Rules(layout={"rooms": MAP, "pillar": PILLAR}[trace["layout"]], fuse=6, max_bombs=2))  # recorded with the old rules
         for (a0, a1), expected in zip(trace["acts"], trace["states"]):
-            g.step(a0, a1)
+            g.step(a0, TURN[a1])  # recorded in board directions
             assert [*g.pos[0], *g.pos[1], *g.lives, *g.kills, len(g.bombs)] == expected
         assert g.done

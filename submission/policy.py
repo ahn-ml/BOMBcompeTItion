@@ -11,7 +11,7 @@ class Policy:
         pass
 
     def act(self, obs):
-        # obs["player"]  0 = A (starts top-left), 1 = B (starts bottom-right)
+        # obs["player"]  0 = A, 1 = B (B sees the board turned 180°, so you always start top-left)
         # obs["walls"]   bool array, obs["walls"][row, col]; row 0 is the top
         # obs["me"], obs["opp"]  (row, col)
         # obs["bombs"]   [{"pos": (row, col), "owner": 0 or 1, "fuse": steps until it explodes}, ...]

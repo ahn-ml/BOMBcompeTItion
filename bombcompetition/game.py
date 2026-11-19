@@ -41,6 +41,7 @@ class Action(IntEnum):
 
 DELTAS = ((0, 0), (-1, 0), (1, 0), (0, -1), (0, 1), (0, 0))  # (d_row, d_col) per action
 MOVES = (Action.UP, Action.DOWN, Action.LEFT, Action.RIGHT)
+TURN = (Action.STAY, Action.DOWN, Action.UP, Action.RIGHT, Action.LEFT, Action.BOMB)  # an action turned 180°
 
 
 @dataclass(frozen=True)
@@ -109,10 +110,10 @@ class Game:
         self.last_pos: list[Cell] = list(self.pos)  # positions at the end of the last step, before a new round
 
     def step(self, a0: int, a1: int) -> list[Death]:
-        """Play one step and return who died in it."""
+        """Play one step and return who died in it. B's action is in B's view (see obs)."""
         if self.done:
             raise RuntimeError("the game is over")
-        actions = (Action(a0), Action(a1))
+        actions = (Action(a0), TURN[Action(a1)])
 
         for p, a in enumerate(actions):
             mine = sum(b.owner == p for b in self.bombs.values())
@@ -170,13 +171,15 @@ class Game:
         return int(self.lives[1] > self.lives[0])
 
     def obs(self, p: int) -> dict:
-        """What player p sees: the game state as it is."""
+        """What player p sees. B sees the board turned 180°, so both players start top-left."""
+        n = self.size - 1
+        see = (lambda c: c) if p == 0 else (lambda c: (n - c[0], n - c[1]))
         return {
             "player": p,  # 0 = A, 1 = B
-            "walls": self.walls.copy(),  # bool (size, size), walls[row, col]
-            "me": self.pos[p],
-            "opp": self.pos[1 - p],
-            "bombs": tuple({"pos": cell, "owner": b.owner, "fuse": b.fuse} for cell, b in self.bombs.items()),
+            "walls": self.walls.copy() if p == 0 else self.walls[::-1, ::-1].copy(),  # bool (size, size), walls[row, col]
+            "me": see(self.pos[p]),
+            "opp": see(self.pos[1 - p]),
+            "bombs": tuple({"pos": see(cell), "owner": b.owner, "fuse": b.fuse} for cell, b in self.bombs.items()),
             "lives": (self.lives[p], self.lives[1 - p]),  # (mine, opponent's)
             "step": self.t,
         }

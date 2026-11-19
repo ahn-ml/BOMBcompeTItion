@@ -44,11 +44,12 @@ python run_match.py --p1 examples/simple --p2 examples/simple
 
 ## Observation and Action
 
-Every step a bot gets `obs`, a dict with the full game state. Both players see the same board.
+Every step a bot gets `obs`, a dict with the full game state. B sees the board turned 180° and its actions
+are read in that view, so both players see themselves starting top-left.
 
 | Key | Value |
 |---|---|
-| `player` | 0 if you are A (starts top-left), 1 if you are B (starts bottom-right) |
+| `player` | 0 if you are A, 1 if you are B |
 | `walls` | numpy bool array `(9, 9)`, `walls[row, col]`; row 0 is the top |
 | `me`, `opp` | `(row, col)` of you and the opponent |
 | `bombs` | tuple of `{"pos": (row, col), "owner": 0 or 1, "fuse": steps until it explodes}` |

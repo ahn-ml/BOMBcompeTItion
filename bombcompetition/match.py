@@ -9,7 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .game import RULES, Action, Death, Game, Rules
+from .game import RULES, TURN, Action, Death, Game, Rules
 
 def load_policy(folder: str | Path) -> type:
     """The Policy class from <folder>/policy.py."""
@@ -29,7 +29,7 @@ def _frame(game: Game, actions=None, deaths: list[Death] = ()) -> dict:
         "blast": [list(cell) for cell in game.last_blast],
         "lives": list(game.lives),
         "kills": list(game.kills),
-        "actions": [int(a) for a in actions] if actions else None,
+        "actions": [int(actions[0]), int(TURN[Action(actions[1])])] if actions else None,  # board directions
         "deaths": [[d.player, d.killer] for d in deaths],
     }
 
